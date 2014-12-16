@@ -14,49 +14,51 @@
 #ifndef _TAMTYPES_H_
 #define _TAMTYPES_H_ 1
 
-typedef	unsigned char 		u8;
-typedef unsigned short 		u16;
+#include <stdint.h>
 
-typedef	volatile unsigned char 		vu8;
-typedef volatile unsigned short 	vu16;
+typedef	uint8_t 		u8;
+typedef uint16_t 		u16;
 
-#ifdef _EE
-typedef unsigned int		u32;
-typedef unsigned long int	u64;
-typedef unsigned int		u128 __attribute__(( mode(TI) ));
+typedef	volatile uint8_t 		vu8;
+typedef volatile uint16_t 	vu16;
 
-typedef volatile unsigned int		vu32;
-typedef volatile unsigned long int	vu64;
-typedef volatile unsigned int		vu128 __attribute__(( mode(TI) ));
-#else
-typedef unsigned long int	u32;
-typedef unsigned long long	u64;
+// #ifdef _EE
+// typedef uint32_t		u32;
+// typedef uint64_t	u64;
+// typedef unsigned int		u128 __attribute__(( mode(TI) ));
 
-typedef volatile unsigned long int	vu32;
-typedef volatile unsigned long long	vu64;
-#endif
+// typedef volatile uint32_t		vu32;
+// typedef volatile uint64_t	vu64;
+// typedef volatile unsigned int		vu128 __attribute__(( mode(TI) ));
+// #else
+typedef uint32_t	u32;
+typedef uint64_t	u64;
 
-typedef signed char 		s8;
-typedef signed short 		s16;
+typedef volatile uint32_t	vu32;
+typedef volatile uint64_t	vu64;
+// #endif
 
-typedef volatile signed char	vs8;
-typedef volatile signed short	vs16;
+typedef int8_t 		s8;
+typedef int16_t 		s16;
 
-#ifdef _EE
-typedef signed int		s32;
-typedef signed long int		s64;
-typedef signed int		s128 __attribute__(( mode(TI) ));
+typedef volatile int8_t	vs8;
+typedef volatile int16_t	vs16;
 
-typedef volatile signed int		vs32;
-typedef volatile signed long int	vs64;
-typedef volatile signed int		vs128 __attribute__(( mode(TI) ));
-#else
-typedef signed long int		s32;
-typedef signed long long	s64;
+// #ifdef _EE
+// typedef signed int		s32;
+// typedef signed long int		s64;
+// typedef signed int		s128 __attribute__(( mode(TI) ));
 
-typedef volatile signed long int	vs32;
-typedef volatile signed long long	vs64;
-#endif
+// typedef volatile signed int		vs32;
+// typedef volatile signed long int	vs64;
+// typedef volatile signed int		vs128 __attribute__(( mode(TI) ));
+// #else
+typedef int32_t		s32;
+typedef int64_t	s64;
+
+typedef volatile int32_t	vs32;
+typedef volatile int64_t	vs64;
+// #endif
 
 #ifndef NULL
 #define NULL	(void *)0
@@ -72,9 +74,9 @@ static inline void _sh(u16 val, u32 addr) { *(vu16 *)addr = val; }
 static inline void _sw(u32 val, u32 addr) { *(vu32 *)addr = val; }
 static inline void _sd(u64 val, u32 addr) { *(vu64 *)addr = val; }
 
-#ifdef _EE
-static inline u128 _lq(u32 addr) { return *(vu128 *)addr; }
-static inline void _sq(u128 val, u32 addr) { *(vu128 *)addr = val; }
-#endif
+// #ifdef _EE
+// static inline u128 _lq(u32 addr) { return *(vu128 *)addr; }
+// static inline void _sq(u128 val, u32 addr) { *(vu128 *)addr = val; }
+// #endif
 
 #endif

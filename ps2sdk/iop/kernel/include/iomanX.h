@@ -243,40 +243,40 @@ int DelDrv(const char *name);
 #define IOMANX_SEEK_CUR	1
 #define IOMANX_SEEK_END	2
 
-// Flags for chstat 'statmask'
-#define FIO_CST_MODE	0x0001
-#define FIO_CST_ATTR	0x0002
-#define FIO_CST_SIZE	0x0004
-#define FIO_CST_CT		0x0008
-#define FIO_CST_AT		0x0010
-#define FIO_CST_MT		0x0020
-#define FIO_CST_PRVT	0x0040
+// // Flags for chstat 'statmask'
+// #define FIO_CST_MODE	0x0001
+// #define FIO_CST_ATTR	0x0002
+// #define FIO_CST_SIZE	0x0004
+// #define FIO_CST_CT		0x0008
+// #define FIO_CST_AT		0x0010
+// #define FIO_CST_MT		0x0020
+// #define FIO_CST_PRVT	0x0040
 
-// File mode flags
-#define FIO_S_IFMT		0xF000		// Format mask
-#define FIO_S_IFLNK		0x4000		// Symbolic link
-#define FIO_S_IFREG		0x2000		// Regular file
-#define FIO_S_IFDIR		0x1000		// Directory
+// // File mode flags
+// #define FIO_S_IFMT		0xF000		// Format mask
+// #define FIO_S_IFLNK		0x4000		// Symbolic link
+// #define FIO_S_IFREG		0x2000		// Regular file
+// #define FIO_S_IFDIR		0x1000		// Directory
 
-// Access rights
-#define FIO_S_ISUID		0x0800		// SUID
-#define FIO_S_ISGID		0x0400		// SGID
-#define FIO_S_ISVTX		0x0200		// Sticky bit
+// // Access rights
+// #define FIO_S_ISUID		0x0800		// SUID
+// #define FIO_S_ISGID		0x0400		// SGID
+// #define FIO_S_ISVTX		0x0200		// Sticky bit
 
-#define FIO_S_IRWXU		0x01C0		// User access rights mask
-#define FIO_S_IRUSR		0x0100		// read
-#define FIO_S_IWUSR		0x0080		// write
-#define FIO_S_IXUSR		0x0040		// execute
+// #define FIO_S_IRWXU		0x01C0		// User access rights mask
+// #define FIO_S_IRUSR		0x0100		// read
+// #define FIO_S_IWUSR		0x0080		// write
+// #define FIO_S_IXUSR		0x0040		// execute
 
-#define FIO_S_IRWXG		0x0038		// Group access rights mask
-#define FIO_S_IRGRP		0x0020		// read
-#define FIO_S_IWGRP		0x0010		// write
-#define FIO_S_IXGRP		0x0008		// execute
+// #define FIO_S_IRWXG		0x0038		// Group access rights mask
+// #define FIO_S_IRGRP		0x0020		// read
+// #define FIO_S_IWGRP		0x0010		// write
+// #define FIO_S_IXGRP		0x0008		// execute
 
-#define FIO_S_IRWXO		0x0007		// Others access rights mask
-#define FIO_S_IROTH		0x0004		// read
-#define FIO_S_IWOTH		0x0002		// write
-#define FIO_S_IXOTH		0x0001		// execute
+// #define FIO_S_IRWXO		0x0007		// Others access rights mask
+// #define FIO_S_IROTH		0x0004		// read
+// #define FIO_S_IWOTH		0x0002		// write
+// #define FIO_S_IXOTH		0x0001		// execute
 
 
 // File mode flags (for mode in io_stat_t)

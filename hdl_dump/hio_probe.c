@@ -1,6 +1,6 @@
 /*
  * hio_probe.c
- * $Id: hio_probe.c,v 1.7 2006/06/18 13:10:23 bobi Exp $
+ * $Id: hio_probe.c,v 1.8 2007-05-12 20:16:14 bobi Exp $
  *
  * Copyright 2004 Bobi B., w1zard0f07@yahoo.com
  *

@@ -1,6 +1,6 @@
 /*
  * config.h
- * $Id: config.h,v 1.14 2006/09/01 17:31:46 bobi Exp $
+ * $Id: config.h,v 1.15 2007-05-12 20:14:17 bobi Exp $
  *
  * Copyright 2004 Bobi B., w1zard0f07@yahoo.com
  *
@@ -51,7 +51,7 @@ typedef unsigned long u_int32_t;
 typedef unsigned __int64 u_int64_t; /* Microsoft Visual C/C++ compiler */
 #    else
 typedef unsigned long long u_int64_t; /* GNU C/C++ compiler */
-typedef signed int ssize_t;
+/* typedef signed int ssize_t; => #include <sys/types.h> */
 #    endif
 #  else
 #    include <sys/types.h>
@@ -86,23 +86,23 @@ typedef int SOCKET;
 /* maximum number of compatibility flags (in bits);
    should fit in the following type */
 #define MAX_FLAGS 8
-typedef unsigned short compat_flags_t;
+typedef unsigned char compat_flags_t;
 static const compat_flags_t COMPAT_FLAGS_INVALID = (compat_flags_t) -1;
 
 /* control whether infrequently-used commands to be built */
 #define INCLUDE_DUMP_CMD
 #define INCLUDE_COMPARE_IIN_CMD
-#undef INCLUDE_MAP_CMD
+#define INCLUDE_MAP_CMD
 #define INCLUDE_INFO_CMD
-#undef INCLUDE_ZERO_CMD
-#undef INCLUDE_CUTOUT_CMD
-#undef INCLUDE_READ_TEST_CMD
+#define INCLUDE_ZERO_CMD
+#define INCLUDE_CUTOUT_CMD
 #define INCLUDE_INITIALIZE_CMD
 #define INCLUDE_DELETE_CMD
 #define INCLUDE_BACKUP_TOC_CMD
 #define INCLUDE_RESTORE_TOC_CMD
 #define INCLUDE_DIAG_CMD
 #define INCLUDE_MODIFY_CMD
+#define INCLUDE_COPY_HDD_CMD
 
 /* option names and values for the config file */
 #define CONFIG_ENABLE_ASPI_FLAG           "enable_aspi"

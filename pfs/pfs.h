@@ -25,12 +25,13 @@
 #include "sys/fcntl.h"
 #include "sys/stat.h"
 #include "iomanX.h"
-#define open iomanx_open
-#define close iomanx_close
+// #define open iomanx_open
+// #define close iomanx_close
 #include "thsemap.h"
 #include "intrman.h"
 #include "cdvdman.h"
 
+#include <stdlib.h>
 #include <string.h>
 
 #include "pfs_types.h"
@@ -38,7 +39,7 @@
 #ifndef min
 #define min(a, b)	((a) < (b) ? (a) : (b))
 #endif
-
+unsigned char look_ctype_table (char character);
 #define PFS_MAJOR	1
 #define PFS_MINOR	0
 

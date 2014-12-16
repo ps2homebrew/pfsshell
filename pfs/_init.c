@@ -6,12 +6,13 @@ _init_pfs (int argc, char *argv[])
   char *args[] =
     {
       "ps2pfs.irx",
-      //"-m", "2",
-      //"-o", "8",
-      //"-n", "64",
+      "-m", "2",
+      "-o", "8",
+      "-n", "64",
+      "-debug",
       NULL
     };
   int _start(int argc, char *argv[]);
-  int result = _start (1, args);
+  int result = _start (8, args);
   return (result);
 }

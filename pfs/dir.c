@@ -24,6 +24,7 @@ pfs_cache_t *getDentry(pfs_cache_t *clink, char *path, pfs_dentry **dentry, u32 
 	pfs_cache_t *dentCache;
 	u32 dentryLen=0;
 	int len=0;
+	int looped=0;
 
 	if (path)
 	{
@@ -43,6 +44,11 @@ pfs_cache_t *getDentry(pfs_cache_t *clink, char *path, pfs_dentry **dentry, u32 
 		d2=d=dentCache->u.dentry;
 		while(*size < clink->u.inode->size)
 		{
+			looped++;
+			if (looped >= 256) {
+				printf("ps2fs: Error: took too long!\n");
+				goto _exit;
+			}
 			// Read another dentry chunk if we need to
 			if ((int)d2 >= ((int)dentCache->u.inode + metaSize))
 			{
@@ -55,7 +61,7 @@ pfs_cache_t *getDentry(pfs_cache_t *clink, char *path, pfs_dentry **dentry, u32 
 				d=dentCache->u.dentry;
 			}
 
-			for (d2=(pfs_dentry*)((int)d+512); d < d2; d=(pfs_dentry *)(((int)d) + aLen))
+			for (d2=(pfs_dentry*)(((int)d)+512); d < d2; d=(pfs_dentry *)(((int)d) + aLen))
 			{
 				aLen=(d->aLen & 0xFFF);
 
@@ -122,10 +128,16 @@ int getNextDentry(pfs_cache_t *clink, pfs_blockpos_t *blockpos, u32 *position, c
 	pfs_cache_t *dcache;
 	pfs_dentry *dentry;
 	u32 len=0;
+	int looped = 0;
 
 	// loop until a non-empty entry is found or until the end of the dentry chunk is reached
 	while((len == 0) && (*position < clink->u.inode->size))
 	{
+		looped++;
+		if (looped >= 256) {
+			printf("ps2fs: Error: took too long!\n");
+			break;
+		}
 
 		if (!(dcache=getDentriesChunk(blockpos, &result)))
 		{
@@ -270,7 +282,7 @@ void fillSelfAndParentDentries(pfs_cache_t *clink, pfs_blockinfo *self, pfs_bloc
 	dentry->pLen=1;
 	dentry->aLen=12 | FIO_S_IFDIR;
 
-	dentry=(pfs_dentry *)(u32)dentry + 12;
+	dentry=(pfs_dentry *)((u32)dentry) + 12;
 
 	dentry->inode=parent->number;
 	*(u32*)dentry->path=('.'<<8) + '.';

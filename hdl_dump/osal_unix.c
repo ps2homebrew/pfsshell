@@ -1,6 +1,6 @@
 /*
  * osal_unix.c
- * $Id: osal_unix.c,v 1.8 2006/09/01 17:21:39 bobi Exp $
+ * $Id: osal_unix.c,v 1.9 2007-05-12 20:17:38 bobi Exp $
  *
  * Copyright 2004 Bobi B., w1zard0f07@yahoo.com
  *
@@ -33,16 +33,11 @@
 /* patch for MacOS X + external USB HDD box by G.S. */
 #  include <sys/disk.h>
 #endif
-#include <sys/fcntl.h>
- #include <sys/ioctl.h>
+#include <fcntl.h>
 #include "retcodes.h"
 #include "osal.h"
- #  define IOCPARM_MASK    0x7f            /* parameters must be < 128 bytes */
-# define IOC_VOID        0x20000000      /* no parameters */
-# define IOC_OUT         0x40000000      /* copy out parameters */
-# define IOC_IN          0x80000000      /* copy in parameters */
-# define IOC_INOUT       (IOC_IN|IOC_OUT)
-# define _IOR(x,y,t)     (IOC_OUT|(((long)sizeof(t)&IOCPARM_MASK)<<16)|((x)<<8)|(y))
+//#include "apa.h"
+
 
 /* memory-mapped files */
 struct osal_mmap_type
@@ -448,8 +443,8 @@ int /* RET_OK, RET_BAD_FORMAT, RET_BAD_DEVICE */
 osal_map_device_name (const char *input,
 		      char output [MAX_PATH])
 {
-  struct stat st;
-  int result = stat (input, &st) == 0 ? RET_OK : RET_ERR;
+  struct stat64 st;
+  int result = stat64 (input, &st) == 0 ? RET_OK : RET_ERR;
   if (result == RET_OK)
     { /* accept the input, only if it is a block device */
 #if !defined (_DEBUG) /* in debug mode treat files as devices */

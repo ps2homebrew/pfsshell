@@ -40,6 +40,8 @@
 #define btoi(b)		((b)/16*10 + (b)%16)	// BCD to int
 #endif
 
+int CdReadIlinkID (u8 *id, int *err);
+
 #define fioUnsupported apa_fioUnsupported
 #define cacheBuf apa_cacheBuf
 #define fileSlots apa_fileSlots
