@@ -503,6 +503,18 @@ do_rename (context_t *ctx, int argc, char *argv[])
   return (result);
 }
 
+static int
+do_rmpart (context_t *ctx, int argc, char *argv[])
+{
+  char tmp[256];
+  strcpy (tmp, "hdd0:");
+  strcat (tmp, argv[1]);
+  int result = iomanx_remove (tmp);
+  if (result < 0)
+    fprintf (stderr, "(!) %s: %s.\n", tmp, iomanx_strerror (result));
+  return (result);
+}
+
 
 static int
 do_help (context_t *ctx, int argc, char *argv[])
@@ -525,7 +537,9 @@ do_help (context_t *ctx, int argc, char *argv[])
 	 "put <file_name> - copy file from current dir to PS2 HDD;\n"
 	 "\tfile name must not contain a path;"
 	 "rm <file_name> - delete a file;\n"
-	 "rename <curr_name> <new_name> - rename a file/dir.\n", stderr);
+	 "rename <curr_name> <new_name> - rename a file/dir.\n"
+   "rmpart <part_name> - remove partition (destructive).\n"
+   , stderr);
   return (0);
 }
 
@@ -562,6 +576,7 @@ exec (void *data, int argc, char *argv[])
       { "get", 1, need_device + need_mount, &do_get },
       { "put", 1, need_device + need_mount, &do_put },
       { "rm", 1, need_device + need_mount, &do_rm },
+      { "rmpart", 1, need_device, &do_rmpart },
       { "rename", 2, need_device + need_mount, &do_rename },
       { "help", 0, no_req, &do_help },
     };
