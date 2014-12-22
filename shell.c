@@ -519,17 +519,19 @@ do_rmpart (context_t *ctx, int argc, char *argv[])
 static int
 do_help (context_t *ctx, int argc, char *argv[])
 {
-  fputs ("Mimics an FTP-client; commands supported:\n"
-	 "lcd [path] - display/set a new local working directory\n"
-	 "device <device> - tell shell where PS2 HDD is;\n"
+  fputs ("~Command List~\n"
+	 "lcd [path] - print/change the local working directory\n"
+	 "device <device> - use this PS2 HDD;\n"
 	 "initialize - blank and create APA on a new PS2 HDD (destructive);\n"
 	 "mkpart <part_name> <size> - create a new partition;\n"
-	 "\tATM size must be a power of 2 (128, 256, 512, ...);\n"
+	 "\tSize must be a power of 2;\n"
 	 "mkfs <part_name> - blank and create PFS on a new partition (destructive);\n"
-	 "mount <part_name> - mount (start to use) a partition;\n"
+   "\tDo not use above command, currently broken\n"
+	 "mount <part_name> - mount a partition;\n"
 	 "umount - un-mount a partition;\n"
 	 "ls - no mount: list partitions; mount: list files/dirs;\n"
 	 "mkdir <dir_name> - create a new directory;\n"
+   "\tDo not use above command, currently broken\n"
 	 "rmdir <dir_name> - delete an existing directory;\n"
 	 "pwd - print current PS2 HDD directory;\n"
 	 "cd <dir_name> - change directory;\n"
@@ -539,6 +541,7 @@ do_help (context_t *ctx, int argc, char *argv[])
 	 "rm <file_name> - delete a file;\n"
 	 "rename <curr_name> <new_name> - rename a file/dir.\n"
    "rmpart <part_name> - remove partition (destructive).\n"
+   "exit - exits the program. (Do this before you unplug your HDD)\n"
    , stderr);
   return (0);
 }
@@ -605,7 +608,7 @@ exec (void *data, int argc, char *argv[])
 static void
 interrupt_proc (int sig)
 {
-  fputs ("SIGINT\n", stderr);
+  fputs ("SIGINT (press enter before unplugging your HDD)\n", stderr);
   interrupt = 1;
 }
 
@@ -620,13 +623,13 @@ shell (FILE *in, FILE *out, FILE *err)
 
   signal (SIGINT, &interrupt_proc);
 
-  fputs ("pfsshell-0.2a by The W1zard 0f 0z (AKA b...)\n"
-	 "http://hdldump.ps2-scene.org/ w1zard0f07@yahoo.com\n"
+  fputs ("pfsshell for POSIX systems\n"
+	 "https://github.com/uyjulian/pfsshell\n"
 	 "\n"
-	 "This program uses iomanX, APA, PFS libraries and probably more\n"
-	 "code from ps2sdk (http://ps2dev.org/)\n"
+	 "This program uses pfs, apa, iomanX, \n"
+	 "code from ps2sdk (https://github.com/ps2dev/ps2sdk)\n"
 	 "\n"
-	 "Browse the README. Use at your own risk.\n"
+	 "Type \"help\" for a list of commands.\n"
 	 "\n", stderr);
 
   int result = shell_loop (in, out, err, &exec, &ctx);

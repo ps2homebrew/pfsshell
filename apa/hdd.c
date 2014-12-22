@@ -130,7 +130,7 @@ int apa_start(int argc, char **argv)
 		argc--; argv++;
 	}
 
-	printf("ps2hdd: max open = %ld, %d buffers\n", maxOpen, cacheSize);
+	printf("ps2hdd: max open = %u, %d buffers\n", maxOpen, cacheSize);
 	getPs2Time(&tm);
 	printf("ps2hdd: %02d:%02d:%02d %02d/%02d/%d\n",
 		tm.hour, tm.min, tm.sec, tm.month, tm.day, tm.year);
@@ -146,7 +146,7 @@ int apa_start(int argc, char **argv)
 				hddDeviceBuf[i].partitionMaxSize=apaGetPartitionMax(hddInfo->totalLBA);
 				if(unlockDrive(i)==0)
 					hddDeviceBuf[i].status--;
-				printf("ps2hdd: disk%d: 0x%08lx sectors, max 0x%08lx\n", i,
+				printf("ps2hdd: disk%d: 0x%08x sectors, max 0x%08x\n", i,
 					hddDeviceBuf[i].totalLBA, hddDeviceBuf[i].partitionMaxSize);
 		}
 	}
@@ -162,7 +162,7 @@ int apa_start(int argc, char **argv)
 				return 1;
 			if(apaGetFormat(i, (int *)&hddDeviceBuf[i].format))
 				hddDeviceBuf[i].status--;
-			printf("ps2hdd: drive status %ld, format version %08lx\n",
+			printf("ps2hdd: drive status %u, format version %08x\n",
 				hddDeviceBuf[i].status, hddDeviceBuf[i].format);
 		}
 	}

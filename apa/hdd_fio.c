@@ -339,7 +339,7 @@ int hddLseek(iop_file_t *f, unsigned long post, int whence)
 	fileSlot=f->privdata;
 	if(whence==SEEK_CUR)
 	{
-		if((fileSlot->post+post) < 0 || (fileSlot->post+post)>=0x1FF9)
+		if((fileSlot->post+post)>=0x1FF9)
 			rv=-EINVAL;
 		else
 		{
@@ -349,7 +349,7 @@ int hddLseek(iop_file_t *f, unsigned long post, int whence)
 	}
 	else if(whence==SEEK_SET)
 	{
-		if(post < 0 || post>=0x1FF9)
+		if(post>=0x1FF9)
 			rv=-EINVAL;
 		else
 		{
@@ -713,8 +713,8 @@ int devctlSetOsdMBR(u32 device, hddSetOsdMBR_t *mbrInfo)
 	if(!(clink=cacheGetHeader(device, APA_SECTOR_MBR, 0, &rv)))
 		return rv;
 
-	dprintf1("ps2hdd: mbr start: %ld\n"
-			 "ps2hdd: mbr size : %ld\n", mbrInfo->start, mbrInfo->size);
+	dprintf1("ps2hdd: mbr start: %u\n"
+			 "ps2hdd: mbr size : %u\n", mbrInfo->start, mbrInfo->size);
 	clink->header->mbr.osdStart=mbrInfo->start;
 	clink->header->mbr.osdSize=mbrInfo->size;
 	clink->flags|=CACHE_FLAG_DIRTY;

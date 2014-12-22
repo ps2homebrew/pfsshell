@@ -33,7 +33,7 @@
 #include <intrman.h>
 #include <cdvdman.h>
 #include <string.h>
-
+#include <stdlib.h>
 #include "helper.h"
 
 #ifndef btoi

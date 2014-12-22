@@ -19,7 +19,7 @@
 #include "sys/stat.h"
 #include "iomanX.h"
 #include <string.h>
-
+#include <stdlib.h>
 //#include "sysclib.h"
 #include "intrman.h"
 

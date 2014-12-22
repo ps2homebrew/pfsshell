@@ -56,7 +56,7 @@ int passcmp(char *pw1, char *pw2)
 
 int getIlinkID(u8 *idbuf)
 {
-	u32 err=0;
+	int err=0;
 
 	memset(idbuf, 0, 32);
 
