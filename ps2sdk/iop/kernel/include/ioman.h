@@ -47,8 +47,8 @@ int format(const char *dev);
 
 /* File objects passed to driver operations.  */
 typedef struct _iop_file {
-	int	mode;		/* File open mode.  */
-	int	unit;		/* HW device unit number.  */
+	s32	mode;		/* File open mode.  */
+	s32	unit;		/* HW device unit number.  */
 	struct _iop_device *device; /* Device driver.  */
 	void	*privdata;	/* The device driver can use this however it
 				   wants.  */
@@ -56,8 +56,8 @@ typedef struct _iop_file {
 
 typedef struct _iop_device {
 	const char *name;
-	unsigned int type;
-	unsigned int version;	/* Not so sure about this one.  */
+	u32 type;
+	u32 version;	/* Not so sure about this one.  */
 	const char *desc;
 	struct _iop_device_ops *ops;
 } iop_device_t;

@@ -66,7 +66,7 @@ typedef struct {
 
 typedef struct {
 	block_device *blockDev;		// call table for hdd(hddCallTable)
-	int fd;						//
+	u32 fd;						//
 	u32 flags;					// rename to attr ones checked
 	u32 total_sector;			// number of sectors in the filesystem
 	u32 zfree;					// zone free

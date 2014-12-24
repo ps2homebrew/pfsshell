@@ -22,8 +22,8 @@
 #define ATA_DIR_WRITE	1
 
 typedef struct _ata_devinfo {
-	int	exists;		/* Was successfully probed.  */
-	int	has_packet;	/* Supports the PACKET command set.  */
+	u32	exists;		/* Was successfully probed.  */
+	u32	has_packet;	/* Supports the PACKET command set.  */
 	u32	total_sectors;	/* Total number of user sectors.  */
 	u32	security_status;/* Word 0x100 of the identify info.  */
 } ata_devinfo_t;

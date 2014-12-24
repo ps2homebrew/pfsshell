@@ -1,14 +1,12 @@
 include ./Defs.mak
 
-PS2SDK = ./ps2sdk
-
 CFLAGS += -I$(HDLD)
 LDFLAGS += -Lapa -Lpfs -Lfake_sdk -LiomanX -Wl,-rpath,.
 LDLIBS += -lpfs -lapa -liomanX -lfakeps2sdk -lpthread -lc
 
 SOURCES += startup.c hl.c util.c shell.c
 OBJECTS += $(SOURCES:.c=.o)
-BINARY ?= test$(EXESUF)
+BINARY ?= pfsshell$(EXESUF)
 
 
 all: $(BINARY)
@@ -24,16 +22,16 @@ clean:
 hdd.img:
 	dd if=/dev/zero of=hdd.img bs=1024 seek=10000000 count=1
 
-libpfs:
+libpfs: libiomanX
 	$(MAKE) -C pfs/
 
 libfakeps2sdk:
 	$(MAKE) -C fake_sdk/
 
-libapa:
+libapa: libiomanX
 	$(MAKE) -C apa/
 
-libiomanX:
+libiomanX: libfakeps2sdk
 	$(MAKE) -C iomanX/
 
 $(BINARY): $(OBJECTS) libfakeps2sdk libiomanX libapa libpfs 
