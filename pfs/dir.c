@@ -61,7 +61,7 @@ pfs_cache_t *getDentry(pfs_cache_t *clink, char *path, pfs_dentry **dentry, u32 
 				d=dentCache->u.dentry;
 			}
 
-			for (d2=(pfs_dentry*)(((int)d)+512); d < d2; d=(pfs_dentry *)(((int)d) + aLen))
+			for (d2=(pfs_dentry*)(((int)d)+512); d < d2; d=(pfs_dentry *)((int)d + aLen))
 			{
 				aLen=(d->aLen & 0xFFF);
 
@@ -278,14 +278,16 @@ void fillSelfAndParentDentries(pfs_cache_t *clink, pfs_blockinfo *self, pfs_bloc
 	memset(dentry, 0, metaSize);
 	dentry->inode=self->number;
 	*(u32*)dentry->path='.';
+	//strcpy(dentry->path, ".");
 	dentry->sub=self->subpart;
 	dentry->pLen=1;
 	dentry->aLen=12 | FIO_S_IFDIR;
 
-	dentry=(pfs_dentry *)((u32)dentry) + 12;
+	dentry=(pfs_dentry *)((u32)dentry + 12);
 
 	dentry->inode=parent->number;
 	*(u32*)dentry->path=('.'<<8) + '.';
+	//strcpy(dentry->path, "..");
 	dentry->sub=parent->subpart;
 	dentry->pLen=2;
 	dentry->aLen=500 | FIO_S_IFDIR;
