@@ -1,12 +1,9 @@
-# -*-makefile-*-
-
 PS2SDK = ../ps2sdk
 HDLD = ./hdl_dump
 
 DEBUG = yes
 
 CFLAGS += -D_BUILD_UNIX -m32
-CXXFLAGS += -D_BUILD_UNIX -m32
 EXESUF =
 SOSUF = .dylib
 

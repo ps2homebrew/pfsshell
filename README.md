@@ -11,8 +11,7 @@ Not supported
 =============
 
 > GUI (currently)
-> 64-bit (it won't read the HDD)
-> Directory/Partition creation (it corrupts the directory structure, and if you try to ls one of those corrupted directories, it will loop forever)
+> 64-bit (if you are reading PFS filesystems, it might cause a segfault)
 
 Original source code
 ====================
