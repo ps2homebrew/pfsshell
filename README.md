@@ -10,8 +10,8 @@ This is a tool to allow you to browse and send files to PFS filesystems.
 Not supported
 =============
 
-> GUI (currently)
-> 64-bit (if you are reading PFS filesystems, it might cause a segfault)
+> GUI (currently)  
+> 64-bit (if you are reading PFS filesystems, it might cause a segfault)  
 
 Original source code
 ====================

@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+int pfs_start(int argc, char *argv[]);
+
 int
 _init_pfs (int argc, char *argv[])
 {
@@ -9,10 +11,8 @@ _init_pfs (int argc, char *argv[])
       "-m", "2",
       "-o", "8",
       "-n", "64",
-      "-debug",
       NULL
     };
-  int _start(int argc, char *argv[]);
-  int result = _start (8, args);
+  int result = pfs_start (7, args);
   return (result);
 }

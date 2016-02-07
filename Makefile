@@ -1,7 +1,6 @@
 include ./Defs.mak
 
-CFLAGS += -I$(HDLD)
-LDFLAGS += -Lapa -Lpfs -Lfake_sdk -LiomanX -Wl,-rpath,.
+LDFLAGS += -Lapa -Lpfs -Lfake_sdk -LiomanX -Wl,-rpath,. 
 LDLIBS += -lpfs -lapa -liomanX -lfakeps2sdk -lpthread -lc
 
 SOURCES += startup.c hl.c util.c shell.c

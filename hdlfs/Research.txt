@@ -1,0 +1,15 @@
+An APA partition can have a parent and child partition(s). All APA partitions (Regardless of whether they are child or parent partitions), have a 2-sector area reserved for storing the APA partition header.
+
+There is also a reserved area at the beginning of each parent partition, known as the attribute area. It contains information about the contents of the partition and boot information. It also contains resources like icons for a Sony dashboard to use for display.
+Parent partitions have a 4MB (0x2000 512-byte sectors) attribute area, which includes it's APA partition header area (2 sectors long).
+
+File READ/WRITE I/O operations to the APA device is used for reading and writing to the attribute area of the parent partition.
+Child partitions do not have such an area, and hence file READ/WRITE I/O operations should not be performed with child partitions.
+
+When data is written to the attribute area via the READ/WRITE I/O operation functions of the APA driver, data is written to sector 8 onwards.
+
+IOCTL2 calls to the APA device is used for reading and writing data to the partition. As parent partitions have a 4MB attribute area and an APA header at the beginning of it, therefore, data transfers should begin at logical sector 0x2000.
+As for child partitions, they still have the 2-sector APA header. Therefore, data transfers should begin from logical sector 2 onwards.
+
+HDLoader has the game's information stored at sector 0x800 to 0x801 of the parent partition's attribute area, when accessed via the APA driver's file I/O operation functions.
+(Therefore, their actual offsets are 0x808 and 0x809 from the start of the partition, respectively)

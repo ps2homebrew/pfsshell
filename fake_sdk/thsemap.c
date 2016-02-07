@@ -1,4 +1,6 @@
-#include "thsemap.h"
+#include <sysclib.h>
+#include <thsemap.h>
+
 #include "dbg.h"
 #if defined (_BUILD_UNIX)
 #  include <semaphore.h>

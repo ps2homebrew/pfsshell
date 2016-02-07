@@ -1,10 +1,4 @@
-#if !defined (_IOMANX_PORT_H)
-#  define _IOMANX_PORT_H
-
-/* borrowed from ps2sdk/common/include/sys/{fcntl,stat}.h */
-#if defined (_BUILD_WIN32)
-#  include "config.h" /* from hdl_dump */
-#endif
+#pragma once
 
 /*
  * most constants were prefixed with `IOMANX_' because
@@ -23,17 +17,16 @@
 extern int _init_apa (int argc, char *argv[]);
 extern int _init_pfs (int argc, char *argv[]);
 
-
-#define IOMANX_O_RDONLY		0x0001
-#define IOMANX_O_WRONLY		0x0002
-#define IOMANX_O_RDWR		0x0003
-#define IOMANX_O_DIROPEN	0x0008	// Internal use for dopen
-#define IOMANX_O_NBLOCK		0x0010
-#define IOMANX_O_APPEND		0x0100
-#define IOMANX_O_CREAT		0x0200
-#define IOMANX_O_TRUNC		0x0400
-#define	IOMANX_O_EXCL		0x0800
-#define IOMANX_O_NOWAIT		0x8000
+#define IOMANX_O_RDONLY  0x0001
+#define IOMANX_O_WRONLY  0x0002
+#define IOMANX_O_RDWR    0x0003
+#define IOMANX_O_DIROPEN 0x0008  // Internal use for dopen
+#define IOMANX_O_NBLOCK  0x0010
+#define IOMANX_O_APPEND  0x0100
+#define IOMANX_O_CREAT   0x0200
+#define IOMANX_O_TRUNC   0x0400
+#define IOMANX_O_EXCL    0x0800
+#define IOMANX_O_NOWAIT  0x8000
 
 // Access flags for filesystem mount
 #define FIO_MT_RDWR			0x00
@@ -89,13 +82,13 @@ extern int _init_pfs (int argc, char *argv[]);
 /* ps2_hdd.h: Date/time descriptor used in on-disk partition header */
 typedef struct ps2fs_datetime_type
 {
-  u_int8_t unused;
-  u_int8_t sec;
-  u_int8_t min;
-  u_int8_t hour;
-  u_int8_t day;
-  u_int8_t month;
-  u_int16_t year;
+  uint8_t unused;
+  uint8_t sec;
+  uint8_t min;
+  uint8_t hour;
+  uint8_t day;
+  uint8_t month;
+  uint16_t year;
 } ps2fs_datetime_t;
 
 /* The following structures are only supported by iomanX.  */
@@ -161,4 +154,3 @@ int iomanx_ioctl2(int fd, int cmd, void *arg, size_t arglen, void *buf, size_t b
 
 const char* iomanx_strerror (int err);
 
-#endif /* _IOMANX_PORT_H defined */

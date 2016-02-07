@@ -1,5 +1,3 @@
-PS2SDK = ../ps2sdk
-HDLD = ./hdl_dump
 
 DEBUG = yes
 
@@ -11,9 +9,7 @@ CFLAGS += -O0 -g -D_DEBUG
 #no debug: define NDEBUG
 
 CFLAGS += -Wall
-CFLAGS2 += -I$(PS2SDK)/common/include
-CFLAGS2 += -I$(PS2SDK)/iop/kernel/include
-CFLAGS2 += -I$(PS2SDK)/iop/dev9/atad/include
+CFLAGS2 += -I../fake_sdk/include
 
 %.o : %.c
 	@echo -e "\tCC  $<"

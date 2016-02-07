@@ -4,10 +4,12 @@ LDFLAGS += -L../fake_sdk -lfakeps2sdk
 LDFLAGS += -L../iomanX -liomanX 
 
 
-CFLAGS += $(CFLAGS2)
+CFLAGS += -I./irx -I./include -I. $(CFLAGS2) 
 
 BINARY ?= libapa$(SOSUF)
-SOURCES += apa.c cache.c hdd.c hdd_fio.c journal.c misc.c _init.c
+SOURCES += _init.c
+SOURCES += irx/hdd_fio.c irx/hdd.c
+SOURCES += src/apa.c src/cache.c src/journal.c src/misc.c
 OBJECTS += $(SOURCES:.c=.o)
 
 all: $(BINARY)

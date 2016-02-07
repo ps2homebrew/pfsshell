@@ -4,11 +4,12 @@ LDFLAGS += -lfakeps2sdk -L../fake_sdk
 LDFLAGS += -liomanX -L../iomanX
 
 
-CFLAGS += $(CFLAGS2)
+CFLAGS += -I. -I./include -I./irx $(CFLAGS2)
 
 BINARY ?= libpfs$(SOSUF)
-SOURCES += bitmap.c block.c cache.c dir.c inode.c journal.c misc.c \
-	   pfs.c pfs_fio.c pfs_fioctl.c super.c _init.c
+SOURCES += _init.c
+SOURCES += irx/pfs_fio.c irx/pfs_fioctl.c irx/pfs.c
+SOURCES += src/bitmap.c src/block.c src/blockWrite.c src/cache.c src/dir.c src/inode.c src/journal.c src/misc.c src/super.c src/superWrite.c
 OBJECTS += $(SOURCES:.c=.o)
 
 all: $(BINARY)
