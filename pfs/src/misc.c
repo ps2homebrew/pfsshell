@@ -47,10 +47,10 @@ void pfsFreeMem(void *buffer)
 	CpuResumeIntr(OldState);
 }
 
-int pfsGetTime(pfs_datetime *tm)
+int pfsGetTime(pfs_datetime_t *tm)
 {
 	sceCdCLOCK	cdtime;
-	static pfs_datetime timeBuf={
+	static pfs_datetime_t timeBuf={
 		0, 0x0D, 0x0E, 0x0A, 0x0D, 1, 2003	// used if can not get time...
 	};
 
@@ -63,15 +63,15 @@ int pfsGetTime(pfs_datetime *tm)
 		timeBuf.month=btoi(cdtime.month & 0x7F);	//The old CDVDMAN sceCdReadClock() function does not automatically file off the highest bit.
 		timeBuf.year=btoi(cdtime.year) + 2000;
 	}
-	memcpy(tm, &timeBuf, sizeof(pfs_datetime));
+	memcpy(tm, &timeBuf, sizeof(pfs_datetime_t));
 	return 0;
 }
 
-int pfsFsckStat(pfs_mount_t *pfsMount, pfs_super_block *superblock,
+int pfsFsckStat(pfs_mount_t *pfsMount, pfs_super_block_t *superblock,
 	u32 stat, int mode)
 {	// mode 0=set flag, 1=remove flag, else check stat
 
-	if(pfsMount->blockDev->transfer(pfsMount->fd, superblock, 0, PFS_BLOCKSIZE, 1,
+	if(pfsMount->blockDev->transfer(pfsMount->fd, superblock, 0, PFS_SUPER_SECTOR, 1,
 		PFS_IO_MODE_READ)==0)
 	{
 		switch(mode)
@@ -85,14 +85,14 @@ int pfsFsckStat(pfs_mount_t *pfsMount, pfs_super_block *superblock,
 			default/*PFS_MODE_CHECK_FLAG*/:
 				return 0 < (superblock->pfsFsckStat & stat);
 		}
-		pfsMount->blockDev->transfer(pfsMount->fd, superblock, 0, PFS_BLOCKSIZE, 1,
+		pfsMount->blockDev->transfer(pfsMount->fd, superblock, 0, PFS_SUPER_SECTOR, 1,
 			PFS_IO_MODE_WRITE);
 		pfsMount->blockDev->flushCache(pfsMount->fd);
 	}
 	return 0;
 }
 
-void pfsPrintBitmap(u32 *bitmap) {
+void pfsPrintBitmap(const u32 *bitmap) {
 	u32 i, j;
 	char a[48+1], b[16+1];
 
@@ -100,7 +100,7 @@ void pfsPrintBitmap(u32 *bitmap) {
 	for (i=0; i < 32; i++){
 		memset(a, 0, 49);
 		for (j=0; j < 16; j++){
-			char *c=(char*)bitmap+j+i*16;
+			const char *c=(const char*)bitmap+j+i*16;
 
 			sprintf(a+j*3, "%02x ", *c);
 			b[j] = ((*c>=0) && (look_ctype_table(*c) & 0x17)) ?
@@ -197,25 +197,25 @@ static int pfsHddTransfer(int fd, void *buffer, u32 sub/*0=main 1+=subs*/, u32 s
 	t.mode=mode;
 	t.buffer=buffer;
 
-	return ioctl2(fd, APA_IOCTL2_TRANSFER_DATA, &t, 0, NULL, 0);
+	return ioctl2(fd, HIOCTRANSFER, &t, 0, NULL, 0);
 }
 
 static u32 pfsHddGetSubCount(int fd)
 {
-	return ioctl2(fd, APA_IOCTL2_NUMBER_OF_SUBS, NULL, 0, NULL, 0);
+	return ioctl2(fd, HIOCNSUB, NULL, 0, NULL, 0);
 }
 
 static u32 pfsHddGetPartSize(int fd, u32 sub/*0=main 1+=subs*/)
 {	// of a partition
-	return ioctl2(fd, APA_IOCTL2_GETSIZE, &sub, 0, NULL, 0);
+	return ioctl2(fd, HIOCGETSIZE, &sub, 0, NULL, 0);
 }
 
 static void pfsHddSetPartError(int fd)
 {
-	ioctl2(fd, APA_IOCTL2_SET_PART_ERROR, NULL, 0, NULL, 0);
+	ioctl2(fd, HIOCSETPARTERROR, NULL, 0, NULL, 0);
 }
 
 static int pfsHddFlushCache(int fd)
 {
-	return ioctl2(fd, APA_IOCTL2_FLUSH_CACHE, NULL, 0, NULL, 0);
+	return ioctl2(fd,HIOCFLUSH, NULL, 0, NULL, 0);
 }

@@ -3,10 +3,9 @@
 
 //apa
 
-
 // Partition format/types (as returned via the mode field for getstat/dread)
 #define APA_TYPE_FREE		0x0000
-#define APA_TYPE_MBR		0x0001		// Master Boot Record
+#define APA_TYPE_MBR		0x0001	// Master Boot Record
 #define APA_TYPE_EXT2SWAP	0x0082
 #define APA_TYPE_EXT2		0x0083
 #define APA_TYPE_REISER		0x0088
@@ -14,27 +13,27 @@
 #define APA_TYPE_CFS		0x0101
 
 #define APA_IDMAX		32
-#define APA_MAXSUB		64		// Maximum # of sub-partitions
+#define APA_MAXSUB		64	// Maximum # of sub-partitions
 #define APA_PASSMAX		8
-#define APA_FLAG_SUB		0x0001		// Sub-partition status for partitions (attr field)
+#define APA_FLAG_SUB		0x0001	// Sub-partition status for partitions (attr field)
 
 //
 // IOCTL2 commands
 //
-#define APA_IOCTL2_ADD_SUB		0x6801
-#define APA_IOCTL2_DELETE_LAST_SUB	0x6802
-#define APA_IOCTL2_NUMBER_OF_SUBS	0x6803
-#define APA_IOCTL2_FLUSH_CACHE		0x6804
+#define HIOCADDSUB		0x6801
+#define HIOCDELSUB		0x6802
+#define HIOCNSUB		0x6803
+#define HIOCFLUSH		0x6804
 
-#define APA_IOCTL2_TRANSFER_DATA	0x6832	// used by pfs to read/write data :P
-#define APA_IOCTL2_GETSIZE		0x6833	// for main(0)/subs(1+)
-#define APA_IOCTL2_SET_PART_ERROR	0x6834	// set(sector of a apa header) that has a error :)
-#define APA_IOCTL2_GET_PART_ERROR	0x6835	// get(sector of a apa header) that has a error
+// Arbitrarily-named commands
+#define HIOCTRANSFER		0x6832	// Used by PFS.IRX to read/write data
+#define HIOCGETSIZE		0x6833	// For main(0)/subs(1+)
+#define HIOCSETPARTERROR	0x6834	// Set (sector of a partition) that has an error
+#define HIOCGETPARTERROR	0x6835	// Get (sector of a partition) that has an error
 
 // I/O direction
-#define APA_IO_MODE_READ		0x00
-#define APA_IO_MODE_WRITE		0x01
-
+#define APA_IO_MODE_READ	0x00
+#define APA_IO_MODE_WRITE	0x01
 
 // structs for IOCTL2 commands
 typedef struct
@@ -49,24 +48,28 @@ typedef struct
 //
 // DEVCTL commands
 //
-#define APA_DEVCTL_MAX_SECTORS		0x4801	// max partition size(in sectors)
-#define APA_DEVCTL_TOTAL_SECTORS	0x4802
-#define APA_DEVCTL_IDLE			0x4803
-#define APA_DEVCTL_FLUSH_CACHE		0x4804
-#define APA_DEVCTL_SWAP_TMP		0x4805
-#define APA_DEVCTL_DEV9_SHUTDOWN	0x4806
-#define APA_DEVCTL_STATUS		0x4807
-#define APA_DEVCTL_FORMAT		0x4808
-#define APA_DEVCTL_SMART_STAT		0x4809
-#define APA_DEVCTL_FREE_SECTORS		0x480A
+// 'H' set
+#define HDIOC_MAXSECTOR		0x4801	// Maximum partition size (in sectors)
+#define HDIOC_TOTALSECTOR	0x4802	// Capacity of the disk (in sectors)
+#define HDIOC_IDLE		0x4803
+#define HDIOC_FLUSH		0x4804
+#define HDIOC_SWAPTMP		0x4805
+#define HDIOC_DEV9OFF		0x4806
+#define HDIOC_STATUS		0x4807
+#define HDIOC_FORMATVER		0x4808
+#define HDIOC_SMARTSTAT		0x4809
+#define HDIOC_FREESECTOR	0x480A	// Returns the approximate amount of free space
+#define HDIOC_IDLEIMM		0x480B
 
-#define APA_DEVCTL_GETTIME		0x6832
-#define APA_DEVCTL_SET_OSDMBR		0x6833// arg = hddSetOsdMBR_t
-#define APA_DEVCTL_GET_SECTOR_ERROR	0x6834
-#define APA_DEVCTL_GET_ERROR_PART_NAME	0x6835// bufp = namebuffer[0x20]
-#define APA_DEVCTL_ATA_READ		0x6836// arg  = hddAtaTransfer_t
-#define APA_DEVCTL_ATA_WRITE		0x6837// arg  = hddAtaTransfer_t
-#define APA_DEVCTL_SCE_IDENTIFY_DRIVE	0x6838// bufp = buffer for atadSceIdentifyDrive
+// 'h' command set
+// Arbitrarily-named commands
+#define HDIOC_GETTIME		0x6832
+#define HDIOC_SETOSDMBR		0x6833	// arg = hddSetOsdMBR_t
+#define HDIOC_GETSECTORERROR	0x6834
+#define HDIOC_GETERRORPARTNAME	0x6835	// bufp = namebuffer[0x20]
+#define HDIOC_READSECTOR	0x6836	// arg  = hddAtaTransfer_t
+#define HDIOC_WRITESECTOR	0x6837	// arg  = hddAtaTransfer_t
+#define HDIOC_SCEIDENTIFY	0x6838	// bufp = buffer for atadSceIdentifyDrive
 
 // structs for DEVCTL commands
 
@@ -83,47 +86,31 @@ typedef struct
 	u32 size;
 } hddSetOsdMBR_t;
 
-
 //pfs
 
-
 // IOCTL2 commands
-#define PFS_IOCTL2_ALLOC		0x7001
-#define PFS_IOCTL2_FREE			0x7002
-#define PFS_IOCTL2_ATTR_ADD		0x7003
-#define PFS_IOCTL2_ATTR_DEL		0x7004
-#define PFS_IOCTL2_ATTR_LOOKUP		0x7005
-#define PFS_IOCTL2_ATTR_READ		0x7006
+// Command set 'p'
+#define PIOCALLOC			0x7001
+#define PIOCFREE			0x7002
+#define PIOCATTRADD			0x7003
+#define PIOCATTRDEL			0x7004
+#define PIOCATTRLOOKUP			0x7005
+#define PIOCATTRREAD			0x7006
 
 // DEVCTL commands
-#define PFS_DEVCTL_GET_ZONE_SIZE	0x5001
-#define PFS_DEVCTL_GET_ZONE_FREE	0x5002
-#define PFS_DEVCTL_CLOSE_ALL		0x5003
-#define PFS_DEVCTL_GET_STAT		0x5004
-#define PFS_DEVCTL_CLEAR_STAT		0x5005
+// Command set 'P'
+#define PDIOC_ZONESZ			0x5001
+#define PDIOC_ZONEFREE			0x5002
+#define PDIOC_CLOSEALL			0x5003
+#define PDIOC_GETFSCKSTAT		0x5004
+#define PDIOC_CLRFSCKSTAT		0x5005
 
-#define PFS_DEVCTL_SET_UID		0x5032
-#define PFS_DEVCTL_SET_GID		0x5033
-
-#define PFS_DEVCTL_SHOW_BITMAP		0xFF
+// Arbitrarily-named commands
+#define PDIOC_SETUID			0x5032
+#define PDIOC_SETGID			0x5033
+#define PDIOC_SHOWBITMAP		0xFF
 
 // I/O direction
 #define PFS_IO_MODE_READ		0x00
 #define PFS_IO_MODE_WRITE		0x01
-
-//For backward-compatibility
-// ioctl2 commands for ps2fs.irx
-#define PFSIO_ALLOC			PFS_IOCTL2_ALLOC
-#define PFSIO_FREE			PFS_IOCTL2_FREE
-#define PFSIO_ATTR_ADD			PFS_IOCTL2_ATTR_ADD
-#define PFSIO_ATTR_DEL			PFS_IOCTL2_ATTR_DEL
-#define PFSIO_ATTR_LOOKUP		PFS_IOCTL2_ATTR_LOOKUP
-#define PFSIO_ATTR_READ			PFS_IOCTL2_ATTR_READ
-
-// devctl commands for ps2fs.irx
-#define PFSCTL_GET_ZONE_SIZE		PFS_DEVCTL_GET_ZONE_SIZE
-#define PFSCTL_GET_ZONE_FREE		PFS_DEVCTL_GET_ZONE_FREE
-#define PFSCTL_CLOSE_ALL		PFS_DEVCTL_CLOSE_ALL
-#define PFSCTL_GET_STAT			PFS_DEVCTL_GET_STAT
-#define PFSCTL_CLEAR_STAT		PFS_DEVCTL_CLEAR_STAT
 

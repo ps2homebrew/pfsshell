@@ -15,7 +15,6 @@
 #include <irx.h>
 #include <atad.h>
 #include <dev9.h>
-#include <poweroff.h>
 #include <loadcore.h>
 #include <sysclib.h>
 #include <errno.h>
@@ -33,11 +32,13 @@ int				fioSema;
 u32 apaMaxOpen=1;
 
 extern const char apaMBRMagic[];
-extern hdd_device_t hddDevices[];
+extern apa_device_t hddDevices[];
 
+#ifdef APA_FORMAT_MAKE_PARTITIONS
 static const char *formatPartList[]={
 	"__net", "__system", "__sysconf", "__common", NULL
 };
+#endif
 
 #define APA_NUMBER_OF_SIZES 9
 static const char *sizeList[APA_NUMBER_OF_SIZES]={
@@ -50,11 +51,11 @@ static int fioPartitionSizeLookUp(char *str);
 static int fioInputBreaker(char const **arg, char *outBuf, int maxout);
 static int fioDataTransfer(iop_file_t *f, void *buf, int size, int mode);
 static int getFileSlot(apa_params_t *params, hdd_file_slot_t **fileSlot);
-static int ioctl2Transfer(u32 device, hdd_file_slot_t *fileSlot, hddIoctl2Transfer_t *arg);
+static int ioctl2Transfer(s32 device, hdd_file_slot_t *fileSlot, hddIoctl2Transfer_t *arg);
 static void fioGetStatFiller(apa_cache_t *clink1, iox_stat_t *stat);
 static int ioctl2AddSub(hdd_file_slot_t *fileSlot, char *argp);
 static int ioctl2DeleteLastSub(hdd_file_slot_t *fileSlot);
-static int devctlSwapTemp(u32 device, char *argp);
+static int devctlSwapTemp(s32 device, char *argp);
 
 static int fioPartitionSizeLookUp(char *str)
 {
@@ -93,20 +94,16 @@ struct apaFsType
 	u16 type;
 };
 
-// NOTE: Changed so format = partitionID,size (used to be partitionID,fpswd,rpswd,size,filesystem)
 static int fioGetInput(const char *arg, apa_params_t *params)
 {
 	char	argBuf[32];
-	int		rv=0;
-#ifdef APA_FULL_INPUT_ARGS
-	int i;
+	int		rv=0, i;
 	static const struct apaFsType fsTypes[]={
 		{"PFS", APA_TYPE_PFS},
 		{"CFS", APA_TYPE_CFS},
 		{"EXT2", APA_TYPE_EXT2},
 		{"EXT2SWAP", APA_TYPE_EXT2SWAP}
 	};
-#endif
 
 	if(params==NULL)
 		return -EINVAL;
@@ -118,15 +115,26 @@ static int fioGetInput(const char *arg, apa_params_t *params)
 		return -EINVAL;
 	if((rv=fioInputBreaker(&arg, params->id, APA_IDMAX))!=0)
 		return rv;
-	if((params->id[0]==0) || (arg[0]==0))
+	if(arg[0] == '\0')	// Return if there are no further parameters.
 		return 0;
-#ifdef APA_FULL_INPUT_ARGS
-	if((rv=fioInputBreaker(&arg, params->fpswd, APA_PASSMAX))!=0)
+
+	if((rv=fioInputBreaker(&arg, params->fpwd, APA_PASSMAX))!=0)
 		return rv;
 
-	if((rv=fioInputBreaker(&arg, params->rpswd, APA_PASSMAX))!=0)
+	if(params->fpwd[0] != '\0')
+		apaEncryptPassword(params->id, params->fpwd, params->fpwd);
+
+	if(arg[0] == '\0')	// Return if there are no further parameters.
+		return 0;
+
+	if((rv=fioInputBreaker(&arg, params->rpwd, APA_PASSMAX))!=0)
 		return rv;
-#endif
+
+	if(params->rpwd[0] != '\0')
+		apaEncryptPassword(params->id, params->rpwd, params->rpwd);
+
+	if(arg[0] == '\0')	// Return if there are no further parameters.
+		return 0;
 
 	memset(argBuf, 0, sizeof(argBuf));
 	if((rv=fioInputBreaker(&arg, argBuf, sizeof(argBuf)))!=0)
@@ -136,7 +144,6 @@ static int fioGetInput(const char *arg, apa_params_t *params)
 		return rv;
 	params->size=rv;
 
-#ifdef APA_FULL_INPUT_ARGS
 	memset(argBuf, 0, sizeof(argBuf));
 	if((rv=fioInputBreaker(&arg, argBuf, sizeof(argBuf)))!=0)
 		return rv;
@@ -155,10 +162,7 @@ static int fioGetInput(const char *arg, apa_params_t *params)
 		printf("hdd: error: Invalid fstype, %s.\n", argBuf);
 		return -EINVAL;
 	}
-#else
-	// Filesystem type is fixed to PFS!
-	params->type = APA_TYPE_PFS;
-#endif
+
 	return rv;
 }
 
@@ -209,7 +213,7 @@ static int fioDataTransfer(iop_file_t *f, void *buf, int size, int mode)
 	return 0;
 }
 
-static int ioctl2Transfer(u32 device, hdd_file_slot_t *fileSlot, hddIoctl2Transfer_t *arg)
+static int ioctl2Transfer(s32 device, hdd_file_slot_t *fileSlot, hddIoctl2Transfer_t *arg)
 {
 	if(fileSlot->nsub<arg->sub)
 		return -ENODEV;
@@ -231,12 +235,6 @@ static int ioctl2Transfer(u32 device, hdd_file_slot_t *fileSlot, hddIoctl2Transf
 	return 0;
 }
 
-static void hddPowerOffHandler(void* data)
-{
-	APA_PRINTF("hdd flush cache\n");
-	ata_device_flush_cache(0);
-}
-
 int hddInit(iop_device_t *f)
 {
 	iop_sema_t sema;
@@ -247,7 +245,6 @@ int hddInit(iop_device_t *f)
 	sema.option=0;
 	fioSema=CreateSema(&sema);
 
-	AddPowerOffHandler(&hddPowerOffHandler, NULL);
 	return 0;
 }
 
@@ -261,9 +258,11 @@ int hddFormat(iop_file_t *f, const char *dev, const char *blockdev, void *arg, s
 {
 	int				rv=0;
 	apa_cache_t		*clink;
-	int				i;
+	u32			i;
+#ifdef APA_FORMAT_MAKE_PARTITIONS
 	apa_params_t		params;
 	u32				emptyBlocks[32];
+#endif
 
 	if(f->unit >= 2)
 		return -ENXIO;
@@ -297,6 +296,10 @@ int hddFormat(iop_file_t *f, const char *dev, const char *blockdev, void *arg, s
 		header->length=(1024*256);	// 128MB
 		header->type=APA_TYPE_MBR;
 		strcpy(header->id,"__mbr");
+#ifdef APA_FORMAT_LOCK_MBR
+		apaEncryptPassword(header->id, header->fpwd, "sce_mbr");
+		apaEncryptPassword(header->id, header->rpwd, "sce_mbr");
+#endif
 		memcpy(header->mbr.magic, apaMBRMagic, sizeof(header->mbr.magic));
 
 		header->mbr.version=APA_MBR_VERSION;
@@ -311,6 +314,7 @@ int hddFormat(iop_file_t *f, const char *dev, const char *blockdev, void *arg, s
 		hddDevices[f->unit].status=0;
 		hddDevices[f->unit].format=APA_MBR_VERSION;
 	}
+#ifdef APA_FORMAT_MAKE_PARTITIONS
 	memset(&emptyBlocks, 0, sizeof(emptyBlocks));
 	memset(&params, 0, sizeof(apa_params_t));
 	params.size=(1024*256);
@@ -329,17 +333,17 @@ int hddFormat(iop_file_t *f, const char *dev, const char *blockdev, void *arg, s
 		if(hddDevices[f->unit].partitionMaxSize < params.size)
 			params.size=hddDevices[f->unit].partitionMaxSize;
 	}
+#endif
 	return rv;
 }
 
-static int apaOpen(u32 device, hdd_file_slot_t *fileSlot, apa_params_t *params, int mode)
+static int apaOpen(s32 device, hdd_file_slot_t *fileSlot, apa_params_t *params, int mode)
 {
 	int				rv=0;
 	u32				emptyBlocks[32];
 	apa_cache_t		*clink;
 	apa_cache_t		*clink2;
 	u32				sector=0;
-
 
 	// walk all looking for any empty blocks & look for partition
 	clink=apaCacheGetHeader(device, 0, APA_IO_MODE_READ, &rv);
@@ -351,7 +355,7 @@ static int apaOpen(u32 device, hdd_file_slot_t *fileSlot, apa_params_t *params, 
 			if(memcmp(clink->header->id, params->id, APA_IDMAX) == 0)
 				break;	// found :)
 		}
-		addEmptyBlock(clink->header, emptyBlocks);
+		apaAddEmptyBlock(clink->header, emptyBlocks);
 		clink=apaGetNextHeader(clink, &rv);
 	}
 
@@ -382,19 +386,18 @@ static int apaOpen(u32 device, hdd_file_slot_t *fileSlot, apa_params_t *params, 
 	fileSlot->nsub=clink->header->nsub;
 	memcpy(&fileSlot->id, &clink->header->id, APA_IDMAX);
 	apaCacheFree(clink);
-	if(apaPassCmp(clink->header->fpwd, params->fpswd)!=0)
+	if(apaPassCmp(clink->header->fpwd, params->fpwd)!=0)
 	{
-		rv = (!(mode & O_WRONLY)) ? apaPassCmp(clink->header->rpwd, params->rpswd) : -EACCES;
+		rv = (!(mode & O_WRONLY)) ? apaPassCmp(clink->header->rpwd, params->rpwd) : -EACCES;
 	} else
 		rv = 0;
 
 	return rv;
 }
 
-static int apaRemove(u32 device, char *id, const char *fpwd)
+static int apaRemove(s32 device, const char *id, const char *fpwd)
 {
-	int			i;
-	u32			nsub;
+	u32			nsub, i;
 	apa_cache_t	*clink;
 	apa_cache_t	*clink2;
 	int			rv;
@@ -436,6 +439,66 @@ static int apaRemove(u32 device, char *id, const char *fpwd)
 	return rv;
 }
 
+// Unofficial helper for renaming APA partitions.
+static int apaRename(s32 device, const apa_params_t *oldParams, const apa_params_t *newParams)
+{
+	apa_cache_t *clink;
+	int i, rv;
+
+	// look to see if can make(newname) or not...
+	if((clink = apaFindPartition(device, newParams->id, &rv)) != NULL)
+	{
+		apaCacheFree(clink);
+		SignalSema(fioSema);
+		return -EEXIST;	// File exists
+	}
+
+	// look to see if open(oldname)
+	for(i=0;i<apaMaxOpen;i++)
+	{
+		if(hddFileSlots[i].f!=NULL)
+		{
+			if(memcmp(hddFileSlots[i].id, oldParams->id, APA_IDMAX)==0)
+			{
+				SignalSema(fioSema);
+				return -EBUSY;
+			}
+		}
+	}
+
+	// Do not allow system partitions (__*) to be renamed.
+	if(oldParams->id[0]=='_' && oldParams->id[1]=='_')
+		return -EACCES;
+
+	// find :)
+	if((clink = apaFindPartition(device, oldParams->id, &rv)) == NULL)
+	{
+		SignalSema(fioSema);
+		return rv;
+	}
+
+	// Check for access rights.
+	if(apaPassCmp(clink->header->fpwd, oldParams->fpwd) != 0)
+	{
+		apaCacheFree(clink);
+		return -EACCES;
+	}
+
+	// do the renaming :) note: subs have no names!!
+	memcpy(clink->header->id, newParams->id, APA_IDMAX);
+
+	// Update passwords
+	memcpy(clink->header->rpwd, newParams->rpwd, APA_PASSMAX);
+	memcpy(clink->header->fpwd, newParams->fpwd, APA_PASSMAX);
+
+	clink->flags|=APA_CACHE_FLAG_DIRTY;
+
+	apaCacheFlushAllDirty(device);
+	apaCacheFree(clink);
+
+	return 0;
+}
+
 int hddRemove(iop_file_t *f, const char *name)
 {
 	int			rv;
@@ -445,7 +508,7 @@ int hddRemove(iop_file_t *f, const char *name)
 		return rv;
 
 	WaitSema(fioSema);
-	rv = apaRemove(f->unit, params.id, params.fpswd);
+	rv = apaRemove(f->unit, params.id, params.fpwd);
 	SignalSema(fioSema);
 
 	return rv;
@@ -542,19 +605,14 @@ int hddLseek(iop_file_t *f, int post, int whence)
 	return rv;
 }
 
-void fioGetStatFiller(apa_cache_t *clink, iox_stat_t *stat)
+static void fioGetStatFiller(apa_cache_t *clink, iox_stat_t *stat)
 {
 	apa_header_t *header;
-	u64 size;
 
 	stat->mode=clink->header->type;
 	stat->attr=clink->header->flags;
 	stat->hisize=0;
-	size = clink->header->length;
-	size *= 512;
-	stat->size=size & 0xFFFFFFFF;
-	size >>= 32;
-	stat->hisize=size & 0xFFFFFFFF;
+	stat->size=clink->header->length;
 	header=clink->header;
 	memcpy(&stat->ctime, &clink->header->created, sizeof(apa_ps2time_t));
 	memcpy(&stat->atime, &clink->header->created, sizeof(apa_ps2time_t));
@@ -567,8 +625,11 @@ void fioGetStatFiller(apa_cache_t *clink, iox_stat_t *stat)
 	stat->private_2=0;
 	stat->private_3=0;
 	stat->private_4=0;
-	//stat->private_5=0;// game ver
-	stat->private_5=clink->header->start;// sony ver
+#ifndef APA_STAT_RETURN_PART_LBA
+	stat->private_5=0;// game ver
+#else
+	stat->private_5=clink->header->start;// SONY ver (return start LBA of the partition)
+#endif
 }
 
 int hddGetStat(iop_file_t *f, const char *name, iox_stat_t *stat)
@@ -582,7 +643,7 @@ int hddGetStat(iop_file_t *f, const char *name, iox_stat_t *stat)
 
 	WaitSema(fioSema);
 	if((clink=apaFindPartition(f->unit, params.id, &rv))){
-		if((rv=apaPassCmp(clink->header->fpwd, params.fpswd))==0 || (rv=apaPassCmp(clink->header->rpwd, params.rpswd))==0)
+		if((rv=apaPassCmp(clink->header->fpwd, params.fpwd))==0 || (rv=apaPassCmp(clink->header->rpwd, params.rpwd))==0)
 				fioGetStatFiller(clink, stat);
 		apaCacheFree(clink);
 	}
@@ -615,14 +676,23 @@ int hddDread(iop_file_t *f, iox_dirent_t *dirent)
 			// if sub get id from main header...
 			apa_cache_t *cmain=apaCacheGetHeader(f->unit, clink->header->main, APA_IO_MODE_READ, &rv);
 			if(cmain!=NULL){
+			/*	This was the SONY original, which didn't do bounds-checking:
 				rv=strlen(cmain->header->id);
-				strcpy(dirent->name, cmain->header->id);
+				strcpy(dirent->name, cmain->header->id); */
+				strncpy(dirent->name, cmain->header->id, APA_IDMAX);
+				dirent->name[APA_IDMAX] = '\0';
+				rv=strlen(dirent->name);
+
 				apaCacheFree(cmain);
 			}
 		}
 		else {
+		/*	This was the SONY original, which didn't do bounds-checking:
 			rv=strlen(clink->header->id);
-			strcpy(dirent->name, clink->header->id);
+			strcpy(dirent->name, clink->header->id); */
+			strncpy(dirent->name, clink->header->id, APA_IDMAX);
+			dirent->name[APA_IDMAX] = '\0';
+			rv=strlen(dirent->name);
 		}
 		fioGetStatFiller(clink, &dirent->stat);
 		if(clink->header->next==0)
@@ -635,58 +705,27 @@ int hddDread(iop_file_t *f, iox_dirent_t *dirent)
 	return rv;
 }
 
+/*	Originally, SONY provided no function for renaming partitions.
+	Syntax:	rename <Old ID>,<fpwd> <New ID>,<fpwd>
+
+	The full-access password (fpwd) is required.
+	System partitions (__*) cannot be renamed.	*/
 int hddReName(iop_file_t *f, const char *oldname, const char *newname)
 {
-	int i, rv;
-	apa_cache_t *clink;
-	char tmpBuf[APA_IDMAX];
+	apa_params_t oldParams;
+	apa_params_t newParams;
+	int rv;
 
-	if(f->unit >= 2 || hddDevices[f->unit].status!=0)
-		return -ENODEV;// No such device
+	if((rv=fioGetInput(oldname, &oldParams))<0)
+		return rv;
+	if((rv=fioGetInput(newname, &newParams))<0)
+		return rv;
 
 	WaitSema(fioSema);
-	// look to see if can make(newname) or not...
-	memset(tmpBuf, 0, APA_IDMAX);
-	strncpy(tmpBuf, newname, APA_IDMAX - 1);
-	tmpBuf[APA_IDMAX - 1] = '\0';
-	if((clink=apaFindPartition(f->unit, tmpBuf, &rv))){
-		apaCacheFree(clink);
-		SignalSema(fioSema);
-		return -EEXIST;	// File exists
-	}
-
-	// look to see if open(oldname)
-	memset(tmpBuf, 0, APA_IDMAX);
-	strncpy(tmpBuf, oldname, APA_IDMAX - 1);
-	tmpBuf[APA_IDMAX - 1] = '\0';
-	for(i=0;i<apaMaxOpen;i++)
-	{
-		if(hddFileSlots[i].f!=0)
-			if(hddFileSlots[i].f->unit==f->unit)
-				if(memcmp(hddFileSlots[i].id, oldname, APA_IDMAX)==0)
-				{
-					SignalSema(fioSema);
-					return -EBUSY;
-				}
-	}
-
-	// find :)
-	if(!(clink=apaFindPartition(f->unit, tmpBuf, &rv)))
-	{
-		SignalSema(fioSema);
-		return -ENOENT;
-	}
-
-	// do the renaming :) note: subs have no names!!
-	memset(clink->header->id, 0, APA_IDMAX);		// all cmp are done with memcmp!
-	strncpy(clink->header->id, newname, APA_IDMAX - 1);
-	clink->header->id[APA_IDMAX - 1] = '\0';
-	clink->flags|=APA_CACHE_FLAG_DIRTY;
-
-	apaCacheFlushAllDirty(f->unit);
-	apaCacheFree(clink);
+	rv = apaRename(f->unit, &oldParams, &newParams);
 	SignalSema(fioSema);
-	return 0;
+
+	return rv;
 }
 
 static int ioctl2AddSub(hdd_file_slot_t *fileSlot, char *argp)
@@ -723,7 +762,7 @@ static int ioctl2AddSub(hdd_file_slot_t *fileSlot, char *argp)
 	clink=apaCacheGetHeader(device, 0, APA_IO_MODE_READ, &rv);
 	while(clink){
 		sector=clink->sector;
-		addEmptyBlock(clink->header, emptyBlocks);
+		apaAddEmptyBlock(clink->header, emptyBlocks);
 		clink=apaGetNextHeader(clink, &rv);
 	}
 	if(rv!=0)
@@ -781,45 +820,45 @@ static int ioctl2DeleteLastSub(hdd_file_slot_t *fileSlot)
 int hddIoctl2(iop_file_t *f, int req, void *argp, unsigned int arglen,
 			  void *bufp, unsigned int buflen)
 {
-	u32 rv=0;
+	u32 rv=0, err_lba;
 	hdd_file_slot_t *fileSlot=f->privdata;
 
 	WaitSema(fioSema);
 	switch(req)
 	{
 	// cmd set 1
-	case APA_IOCTL2_ADD_SUB:
+	case HIOCADDSUB:
 		rv=ioctl2AddSub(fileSlot, (char *)argp);
 		break;
 
-	case APA_IOCTL2_DELETE_LAST_SUB:
+	case HIOCDELSUB:
 		rv=ioctl2DeleteLastSub(fileSlot);
 		break;
 
-	case APA_IOCTL2_NUMBER_OF_SUBS:
+	case HIOCNSUB:
 		rv=fileSlot->nsub;
 		break;
 
-	case APA_IOCTL2_FLUSH_CACHE:
+	case HIOCFLUSH:
 		ata_device_flush_cache(f->unit);
 		break;
 
 	// cmd set 2
-	case APA_IOCTL2_TRANSFER_DATA:
+	case HIOCTRANSFER:
 		rv=ioctl2Transfer(f->unit, fileSlot, argp);
 		break;
 
-	case APA_IOCTL2_GETSIZE:
+	case HIOCGETSIZE:
 		rv=fileSlot->parts[*(u32 *)argp].length;
 		break;
 
-	case APA_IOCTL2_SET_PART_ERROR:
+	case HIOCSETPARTERROR:
 		apaSetPartErrorSector(f->unit, fileSlot->parts[0].start); rv=0;
 		break;
 
-	case APA_IOCTL2_GET_PART_ERROR:
-		if((rv=apaGetPartErrorSector(f->unit, APA_SECTOR_PART_ERROR, bufp)) > 0) {
-			if(*(u32 *)bufp==fileSlot->parts[0].start) {
+	case HIOCGETPARTERROR:
+		if((rv=apaGetPartErrorSector(f->unit, APA_SECTOR_PART_ERROR, &err_lba)) > 0) {
+			if(err_lba==fileSlot->parts[0].start) {
 				rv=0; apaSetPartErrorSector(f->unit, 0);// clear last error :)
 			}
 		}
@@ -833,7 +872,7 @@ int hddIoctl2(iop_file_t *f, int req, void *argp, unsigned int arglen,
 	return rv;
 }
 
-static int devctlSwapTemp(u32 device, char *argp)
+static int devctlSwapTemp(s32 device, char *argp)
 {
 	int			rv;
 	apa_params_t	params;
@@ -845,7 +884,7 @@ static int devctlSwapTemp(u32 device, char *argp)
 	if((rv=fioGetInput(argp, &params)) < 0)
 		return rv;
 
-	if(*(u16 *)(params.id)==(u16)0x5F5F)// test for '__' system partition
+	if(params.id[0] == '_' && params.id[1] == '_')// test for '__' system partition
 		return -EINVAL;
 
 	memset(szBuf, 0, APA_IDMAX);
@@ -854,7 +893,7 @@ static int devctlSwapTemp(u32 device, char *argp)
 		return rv;
 
 	if((partNew=apaFindPartition(device, params.id, &rv))) {
-		if((rv=apaPassCmp(partNew->header->fpwd, params.fpswd))==0) {
+		if((rv=apaPassCmp(partNew->header->fpwd, params.fpwd))==0) {
 			memcpy(partTemp->header->id, partNew->header->id, APA_IDMAX);
 			memcpy(partTemp->header->rpwd, partNew->header->rpwd, APA_PASSMAX);
 			memcpy(partTemp->header->fpwd, partNew->header->fpwd, APA_PASSMAX);
@@ -873,7 +912,7 @@ static int devctlSwapTemp(u32 device, char *argp)
 	return rv;
 }
 
-int devctlSetOsdMBR(u32 device, hddSetOsdMBR_t *mbrInfo)
+static int devctlSetOsdMBR(s32 device, hddSetOsdMBR_t *mbrInfo)
 {
 	int rv;
 	apa_cache_t *clink;
@@ -899,78 +938,82 @@ int hddDevctl(iop_file_t *f, const char *devname, int cmd, void *arg,
 	WaitSema(fioSema);
 	switch(cmd)
 	{
-	// cmd set 1
-	case APA_DEVCTL_DEV9_SHUTDOWN:
+	// Command set 1 ('H')
+	case HDIOC_DEV9OFF:
 		ata_device_smart_save_attr(f->unit);
 		dev9Shutdown();
 		break;
 
-	case APA_DEVCTL_IDLE:
+	case HDIOC_IDLE:
 		rv=ata_device_idle(f->unit, *(char *)arg);
 		break;
 
-	case APA_DEVCTL_MAX_SECTORS:
+	case HDIOC_MAXSECTOR:
 		rv=hddDevices[f->unit].partitionMaxSize;
 		break;
 
-	case APA_DEVCTL_TOTAL_SECTORS:
+	case HDIOC_TOTALSECTOR:
 		rv=hddDevices[f->unit].totalLBA;
 		break;
 
-	case APA_DEVCTL_FLUSH_CACHE:
+	case HDIOC_FLUSH:
 		if(ata_device_flush_cache(f->unit))
 			rv=-EIO;
 		break;
 
-	case APA_DEVCTL_SWAP_TMP:
+	case HDIOC_SWAPTMP:
 		rv=devctlSwapTemp(f->unit, (char *)arg);
 		break;
 
-	case APA_DEVCTL_SMART_STAT:
+	case HDIOC_SMARTSTAT:
 		rv=ata_device_smart_get_status(f->unit);
 		break;
 
-	case APA_DEVCTL_STATUS:
+	case HDIOC_STATUS:
 		rv=hddDevices[f->unit].status;
 		break;
 
-	case APA_DEVCTL_FORMAT:
+	case HDIOC_FORMATVER:
 		rv=hddDevices[f->unit].format;
 		break;
 
-	case APA_DEVCTL_FREE_SECTORS:
-		rv=hddGetFreeSectors(f->unit, bufp, hddDevices);
+	case HDIOC_FREESECTOR:
+		rv=apaGetFreeSectors(f->unit, bufp, hddDevices);
 		break;
 
-	// cmd set 2 :)
-	case APA_DEVCTL_GETTIME:
+	case HDIOC_IDLEIMM:
+		rv=ata_device_idle_immediate(f->unit);
+		break;
+
+	// Command set 2 ('h')
+	case HDIOC_GETTIME:
 		rv=apaGetTime((apa_ps2time_t *)bufp);
 		break;
 
-	case APA_DEVCTL_SET_OSDMBR:
+	case HDIOC_SETOSDMBR:
 		rv=devctlSetOsdMBR(f->unit, (hddSetOsdMBR_t *)arg);
 		break;
 
-	case APA_DEVCTL_GET_SECTOR_ERROR:
+	case HDIOC_GETSECTORERROR:
 		rv=apaGetPartErrorSector(f->unit, APA_SECTOR_SECTOR_ERROR, 0);
 		break;
 
-	case APA_DEVCTL_GET_ERROR_PART_NAME:
+	case HDIOC_GETERRORPARTNAME:
 		rv=apaGetPartErrorName(f->unit, (char *)bufp);
 		break;
 
-	case APA_DEVCTL_ATA_READ:
+	case HDIOC_READSECTOR:
 		rv=ata_device_sector_io(f->unit, (void *)bufp, ((hddAtaTransfer_t *)arg)->lba,
 			((hddAtaTransfer_t *)arg)->size, ATA_DIR_READ);
 		break;
 
-	case APA_DEVCTL_ATA_WRITE:
+	case HDIOC_WRITESECTOR:
 		rv=ata_device_sector_io(f->unit, ((hddAtaTransfer_t *)arg)->data,
 			((hddAtaTransfer_t *)arg)->lba, ((hddAtaTransfer_t *)arg)->size,
 				ATA_DIR_WRITE);
 		break;
 
-	case APA_DEVCTL_SCE_IDENTIFY_DRIVE:
+	case HDIOC_SCEIDENTIFY:
 		rv=ata_device_sce_identify_drive(f->unit, (u16 *)bufp);
 		break;
 

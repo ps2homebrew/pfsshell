@@ -64,7 +64,7 @@ static iop_device_t hddFioDev={
 	(struct _iop_device_ops *)&hddOps,
 };
 
-hdd_device_t hddDevices[2]={
+apa_device_t hddDevices[2]={
 	{0, 0, 0, 3},
 	{0, 0, 0, 3}
 };
@@ -73,14 +73,14 @@ extern u32 apaMaxOpen;
 extern hdd_file_slot_t *hddFileSlots;
 
 static int inputError(char *input);
-static int unlockDrive(u32 device);
+static int unlockDrive(s32 device);
 
-int hddCheckPartitionMax(s32 device, s32 size)
+int hddCheckPartitionMax(s32 device, u32 size)
 {
 	return (hddDevices[device].partitionMaxSize >= size) ? 0 : -EINVAL;
 }
 
-apa_cache_t *hddAddPartitionHere(s32 device, apa_params_t *params, u32 *emptyBlocks,
+apa_cache_t *hddAddPartitionHere(s32 device, const apa_params_t *params, u32 *emptyBlocks,
 				u32 sector, int *err)
 {
 	apa_cache_t	*clink_this;
@@ -103,23 +103,29 @@ apa_cache_t *hddAddPartitionHere(s32 device, apa_params_t *params, u32 *emptyBlo
 	some_size=(part_end%params->size);
 	tmp = some_size ? params->size - some_size : 0;
 
-	if(hddDevices[device].totalLBA < (part_end+params->size+tmp))
+	if(hddDevices[device].totalLBA < (part_end + params->size + tmp)
+		//Non-SONY: when dealing with large disks, this check may overflow (therefore, check for overflows!).
+		|| (part_end < sector))
 	{
 		*err=-ENOSPC;
 		apaCacheFree(clink_this);
 		return NULL;
 	}
 
-	if((clink_next=apaCacheGetHeader(device, 0, APA_IO_MODE_READ, err))==NULL){
+	if((clink_next=apaCacheGetHeader(device, 0, APA_IO_MODE_READ, err))==NULL)
+	{
 		apaCacheFree(clink_this);
 		return NULL;
 	}
 
 	tempSize=params->size;
-	while(part_end%params->size){
+	while(part_end%params->size)
+	{
 		tempSize=params->size>>1;
-		while(0x3FFFF<tempSize){
-			if(!(part_end%tempSize)) {
+		while(0x3FFFF<tempSize)
+		{
+			if(!(part_end%tempSize))
+			{
 				clink_new=apaRemovePartition(device, part_end, 0,
 					clink_this->header->start, tempSize);
 				clink_this->header->next=part_end;
@@ -136,68 +142,17 @@ apa_cache_t *hddAddPartitionHere(s32 device, apa_params_t *params, u32 *emptyBlo
 		}
 	}
 	if((clink_new=apaFillHeader(device, params, part_end, 0, clink_this->header->start,
-		params->size, err))!=NULL) {
-			clink_this->header->next=part_end;
-			clink_this->flags|=APA_CACHE_FLAG_DIRTY;
-			clink_next->header->prev=clink_new->header->start;
-			clink_next->flags|=APA_CACHE_FLAG_DIRTY;
-			apaCacheFlushAllDirty(device);
-		}
-		apaCacheFree(clink_this);
-		apaCacheFree(clink_next);
-		return clink_new;
-}
-
-static void hddCalculateFreeSpace(u32 *free, u32 sectors)
-{
-	if(0x1FFFFF < sectors)
+		params->size, err))!=NULL)
 	{
-		*free += sectors;
-		return;
+		clink_this->header->next=part_end;
+		clink_this->flags|=APA_CACHE_FLAG_DIRTY;
+		clink_next->header->prev=clink_new->header->start;
+		clink_next->flags|=APA_CACHE_FLAG_DIRTY;
+		apaCacheFlushAllDirty(device);
 	}
-
-	if((*free & sectors) == 0)
-	{
-		*free |= sectors;
-		return;
-	}
-
-	for(sectors >>= 1; 0x3FFFF < sectors; sectors >>= 1)
-		*free |= sectors;
-}
-
-int hddGetFreeSectors(s32 device, u32 *free, hdd_device_t *deviceinfo)
-{
-	u32 sectors, partMax;
-	int rv;
-	apa_cache_t *clink;
-
-	sectors = 0;
-	if((clink = apaCacheGetHeader(device, 0, APA_IO_MODE_READ, &rv)) != NULL)
-	{
-		do{
-			if(clink->header->type == 0)
-				hddCalculateFreeSpace(free, clink->header->length);
-			sectors += clink->header->length;
-		}while((clink = apaGetNextHeader(clink, &rv)) != NULL);
-	}
-
-	if(rv == 0)
-	{
-		for(partMax = deviceinfo[device].partitionMaxSize; 0x0003FFFF < partMax; partMax >>= 1)
-		{
-			if((sectors % deviceinfo[device].partitionMaxSize == 0) && (sectors + deviceinfo[device].partitionMaxSize < deviceinfo[device].totalLBA))
-			{
-				hddCalculateFreeSpace(free, deviceinfo[device].partitionMaxSize);
-				sectors += deviceinfo[device].partitionMaxSize;
-				break;
-			}
-		}
-
-		APA_PRINTF(APA_DRV_NAME": total = %08lx sectors, installable = %08lx sectors.\n", sectors, *free);
-	}
-
-	return rv;
+	apaCacheFree(clink_this);
+	apaCacheFree(clink_next);
+	return clink_new;
 }
 
 static int inputError(char *input)
@@ -212,7 +167,7 @@ static void printStartup(void)
 	return;
 }
 
-static int unlockDrive(u32 device)
+static int unlockDrive(s32 device)
 {
 	u8 id[32];
 	int rv;
@@ -241,7 +196,8 @@ int _start(int argc, char **argv)
 	{
 		if(argv[0][0] != '-')
 			break;
-		if(strcmp("-o", argv[0])==0){
+		if(strcmp("-o", argv[0])==0)
+		{
 			argc--; argv++;
 			if(!argc)
 				return inputError(input);
@@ -249,7 +205,8 @@ int _start(int argc, char **argv)
 			if(i-1<32)
 				apaMaxOpen=i;
 		}
-		else if(strcmp("-n", argv[0])==0){
+		else if(strcmp("-n", argv[0])==0)
+		{
 			argc--; argv++;
 			if(!argc)
 				return inputError(input);
@@ -266,11 +223,13 @@ int _start(int argc, char **argv)
 		tm.hour, tm.min, tm.sec, tm.month, tm.day, tm.year);
 	for(i=0;i < 2;i++)
 	{
-		if(!(hddInfo=ata_get_devinfo(i))){
+		if(!(hddInfo=ata_get_devinfo(i)))
+		{
 			APA_PRINTF(APA_DRV_NAME": Error: ata initialization failed.\n");
 			return 0;
 		}
-		if(hddInfo->exists!=0 && hddInfo->has_packet==0){
+		if(hddInfo->exists!=0 && hddInfo->has_packet==0)
+		{
 				hddDevices[i].status--;
 				hddDevices[i].totalLBA=hddInfo->total_sectors;
 				hddDevices[i].partitionMaxSize=apaGetPartitionMax(hddInfo->total_sectors);
@@ -287,7 +246,8 @@ int _start(int argc, char **argv)
 	apaCacheInit(cacheSize);
 	for(i=0;i < 2;i++)
 	{
-		if(hddDevices[i].status<2){
+		if(hddDevices[i].status<2)
+		{
 			if(apaJournalRestore(i)!=0)
 				return 1;
 			if(apaGetFormat(i, &hddDevices[i].format))

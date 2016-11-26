@@ -217,7 +217,7 @@ lspart (void)
       iox_dirent_t dirent;
       while ((result = iomanx_dread (dh, &dirent)) && result != -1)
 	{
-	  u_int64_t size = (u_int64_t) dirent.stat.size / 2;
+	  u_int64_t size = (u_int64_t) dirent.stat.size * 512;
 	  size /= (1024 * 1024);
 	  printf ("0x%04x %5luMB %s\n",
 		  dirent.stat.mode, (unsigned long) size, dirent.name);
