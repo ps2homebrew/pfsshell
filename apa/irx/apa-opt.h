@@ -6,6 +6,7 @@
 
 #define APA_STAT_RETURN_PART_LBA	1
 #define APA_FORMAT_MAKE_PARTITIONS	1
+#define APA_FORMAT_LOCK_MBR		1
 #define _start apa_start
 
 #endif

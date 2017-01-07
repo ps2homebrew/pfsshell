@@ -7,7 +7,7 @@
 # Licenced under Academic Free License version 2.0
 # Review ps2sdk README & LICENSE files for further details.
 #
-# $Id: irx_imports.h 1353 2006-09-04 06:48:12Z Herben $
+# $Id$
 # Defines all IRX imports.
 */
 
