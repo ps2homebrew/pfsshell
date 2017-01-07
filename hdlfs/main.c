@@ -11,6 +11,7 @@
 #include <types.h>
 
 #include <sys/stat.h>
+#include <hdd-ioctl.h>
 
 #include "hdlfs.h"
 
@@ -26,29 +27,8 @@ IRX_ID(MODNAME, 0x01, 0x01);
 #endif
 
 /* APA IOCTL2 commands */
-// structs for IOCTL2 commands
-typedef struct
-{
-	unsigned int	sub;		// main(0)/subs(1+) to read/write
-	unsigned int	sector;
-	unsigned int	size;		// in sectors
-	unsigned int	mode;		// ATAD_MODE_READ/ATAD_MODE_WRITE.....
-	void	*buffer;
-} hddIoctl2Transfer_t;
-
-//
-// IOCTL2 commands (From PS2FS)
-//
-#define APA_IOCTL2_NUMBER_OF_SUBS	0x00006803
-#define APA_IOCTL2_TRANSFER_DATA	0x00006832	// used by pfs to read/write data :P
-#define APA_IOCTL2_GETSIZE		0x00006833	// for main(0)/subs(1+)
-#define APA_IOCTL2_GETSTART		0x00006836	// Get the sector number of the first sector of the partition.
-#define APA_IOCTL2_FLUSH_CACHE		0x00006804
-
-//
-// DEVCTL commands (From PS2FS)
-//
-#define APA_DEVCTL_MAX_SECTORS		0x00004801	// max partition size(in sectors)
+// Special HDD.IRX IOCTL2 command for supporting HDLFS
+#define HIOCGETPARTSTART		0x00006836	// Get the sector number of the first sector of the partition.
 
 struct HDLFS_FileDescriptor{
 	int	MountFD;
@@ -102,7 +82,7 @@ static int hdlfs_format(iop_file_t *fd, const char *device, const char *blockdev
 	unsigned int i, MaxSectorsPerPart, NumReservedSectors, NumberOfSectors, SectorNumber, SectorsInPart, SectorsRemaining;
 	hdl_game_info HDLFilesystemData;
 
-	MaxSectorsPerPart=devctl(blockdev, APA_DEVCTL_MAX_SECTORS, NULL, 0, NULL, 0);
+	MaxSectorsPerPart=devctl(blockdev, HDIOC_MAXSECTOR, NULL, 0, NULL, 0);
 	result=0;
 	if((PartitionFD=open(blockdev, O_WRONLY, 0644))>=0){
 		lseek(PartitionFD, HDL_GAME_DATA_OFFSET, SEEK_SET);
@@ -123,9 +103,9 @@ static int hdlfs_format(iop_file_t *fd, const char *device, const char *blockdev
 		HDLFilesystemData.discType=((struct HDLFS_FormatArgs*)args)->DiscType;
 
 		/* Set up partition data in the HDLoader game filesystem structure. */
-		HDLFilesystemData.num_partitions=ioctl2(PartitionFD, APA_IOCTL2_NUMBER_OF_SUBS, NULL, 0, NULL, 0)+1;
+		HDLFilesystemData.num_partitions=ioctl2(PartitionFD, HIOCNSUB, NULL, 0, NULL, 0)+1;
 		for(i=0, SectorNumber=0; i<HDLFilesystemData.num_partitions && result>=0; i++){
-			if((result=ioctl2(PartitionFD, APA_IOCTL2_GETSTART, &i, sizeof(i), NULL, 0))>=0){
+			if((result=ioctl2(PartitionFD, HIOCGETPARTSTART, &i, sizeof(i), NULL, 0))>=0){
 				NumReservedSectors=(i==0)?0x2000:4;	/* Main partitions have a 4MB reserved area, while sub-partitions have 2 reserved sectors.
 										However, if a sub-partition has 2 reserved sectors, it means that there will be some leftover sectors at the end of the disk
 										(The number of sectors will be indivisible by 4 - as 2048=512x4).
@@ -135,7 +115,7 @@ static int hdlfs_format(iop_file_t *fd, const char *device, const char *blockdev
 				DEBUG_PRINTF("HDLFS format - part: %u, start: 0x%08lx\n", i, SectorNumber);
 				HDLFilesystemData.part_specs[i].part_offset=SectorNumber;
 				HDLFilesystemData.part_specs[i].data_start=result+NumReservedSectors;
-				SectorsInPart=(ioctl2(PartitionFD, APA_IOCTL2_GETSIZE, &i, sizeof(i), NULL, 0)-NumReservedSectors)/4;
+				SectorsInPart=(ioctl2(PartitionFD, HIOCGETSIZE, &i, sizeof(i), NULL, 0)-NumReservedSectors)/4;
 				SectorsRemaining=NumberOfSectors-SectorNumber;
 				SectorsInPart=SectorsInPart>SectorsRemaining?SectorsRemaining:SectorsInPart;
 				//Sanity check: Ensure that the partition size doesn't hit exactly 4GB or larger, or the size field will overflow.
@@ -226,7 +206,7 @@ static int hdlfs_io_internal(iop_file_t *fd, void *buffer, int size, int mode){
 		CmdData.mode=mode;
 		CmdData.buffer=buffer;
 
-		if((result=ioctl2(((struct HDLFS_FileDescriptor *)fd->privdata)->MountFD, APA_IOCTL2_TRANSFER_DATA, &CmdData, 0, NULL, 0))<0){
+		if((result=ioctl2(((struct HDLFS_FileDescriptor *)fd->privdata)->MountFD, HIOCTRANSFER, &CmdData, 0, NULL, 0))<0){
 			DEBUG_PRINTF("HDLFS: I/O error occurred at partition %u, sector 0x%08lx, num sectors: %u, code: %d\n", ((struct HDLFS_FileDescriptor *)fd->privdata)->CurrentPartNum, ((struct HDLFS_FileDescriptor *)fd->privdata)->RelativeSectorNumber, SectorsToRead, result);
 			break;
 		}
@@ -290,7 +270,7 @@ static long long int hdlfs_lseek_internal(iop_file_t *fd, long long int offset, 
 	return result;
 }
 
-static int hdlfs_lseek(iop_file_t *fd, unsigned int offset, int whence){
+static int hdlfs_lseek(iop_file_t *fd, int offset, int whence){
 	return((int)hdlfs_lseek_internal(fd, offset, whence));
 }
 
@@ -416,8 +396,8 @@ static int hdlfs_mount(iop_file_t *fd, const char *mountpoint, const char *block
 					if((result=read(MountDescriptor->MountFD, &HDLGameInfo, sizeof(HDLGameInfo)))==sizeof(HDLGameInfo)){
 						/* Calculate the size of all partitions combined. */
 						MountDescriptor->size=0;
-						MountDescriptor->NumPartitions=ioctl2(MountDescriptor->MountFD, APA_IOCTL2_NUMBER_OF_SUBS, NULL, 0, NULL, 0)+1;
-						for(part=0; part<MountDescriptor->NumPartitions; part++) MountDescriptor->size+=ioctl2(MountDescriptor->MountFD, APA_IOCTL2_GETSIZE, &part, sizeof(part), NULL, 0);
+						MountDescriptor->NumPartitions=ioctl2(MountDescriptor->MountFD, HIOCNSUB, NULL, 0, NULL, 0)+1;
+						for(part=0; part<MountDescriptor->NumPartitions; part++) MountDescriptor->size+=ioctl2(MountDescriptor->MountFD, HIOCGETSIZE, &part, sizeof(part), NULL, 0);
 
 						MountDescriptor->offset=MountDescriptor->CurrentPartNum=MountDescriptor->RelativeSectorNumber=0;
 						memcpy(MountDescriptor->part_specs, HDLGameInfo.part_specs, sizeof(MountDescriptor->part_specs));
@@ -445,7 +425,7 @@ static int unmount(unsigned int unit){
 	if(unit<MAX_AVAILABLE_FDs && FD_List[unit].MountFD>=0){
 		WaitSema(FD_List[unit].SemaID);
 
-		ioctl2(FD_List[unit].MountFD, APA_IOCTL2_FLUSH_CACHE, NULL, 0, NULL, 0);
+		ioctl2(FD_List[unit].MountFD, HIOCFLUSH, NULL, 0, NULL, 0);
 		close(FD_List[unit].MountFD);
 		FD_List[unit].MountFD=-1;
 
