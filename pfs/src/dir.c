@@ -62,7 +62,7 @@ pfs_cache_t *pfsGetDentry(pfs_cache_t *clink, char *path, pfs_dentry_t **dentry,
 				d=dentCache->u.dentry;
 			}
 
-			for (d2=(pfs_dentry_t*)((int)d+512); d < d2; d=(pfs_dentry_t *)((int)d + aLen))
+			for (d2=(pfs_dentry_t*)((size_t)d+512); d < d2; d=(pfs_dentry_t *)((size_t)d + aLen))
 			{
 				aLen=(d->aLen & 0xFFF);
 
@@ -204,7 +204,7 @@ pfs_cache_t *pfsDirRemoveEntry(pfs_cache_t *clink, char *path)
 		val=(int)dentry-(int)c->u.dentry;
 		if (val<0)	val +=511;
 		val /=512;	val *=512;
-		dnext=(pfs_dentry_t*)((int)c->u.dentry+val);
+		dnext=(pfs_dentry_t*)((size_t)c->u.dentry+val);
 		do{
 			aLen = dnext->aLen & 0xFFF;
 

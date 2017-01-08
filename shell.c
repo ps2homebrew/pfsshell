@@ -12,10 +12,6 @@
 #include "iomanX_port.h"
 #include "hl.h"
 
-#if !defined(_BUILD_WIN32)
-#define O_BINARY 0
-#endif
-
 volatile int interrupt = 0;
 
 typedef struct {
@@ -71,7 +67,7 @@ static int shell_loop(FILE *in, FILE *out, FILE *err,
 			if (result != 0) { /* probably operation has failed */
 				fprintf(err, "(!) Exit code is %d", result);
 				if (errno != 0)
-					fprintf(err, "; errno %d (%s).\n", errno, strerror(errno));
+					fprintf(err, "; errno %d (%s).\n", errno, strerror(-errno));
 				else
 					fprintf(err, ".\n");
 			}
@@ -113,7 +109,7 @@ static int do_device(context_t *ctx, int argc, char *argv[]) {
 	int result = _init_apa(0, NULL);
 	if (result < 0) {
 		fprintf(stderr, "(!) init_apa: failed with %d (%s)\n", result,
-						iomanx_strerror(result));
+						strerror(-result));
 		exit(1);
 	}
 
@@ -121,7 +117,7 @@ static int do_device(context_t *ctx, int argc, char *argv[]) {
 	result = _init_pfs(0, NULL);
 	if (result < 0) {
 		fprintf(stderr, "(!) init_pfs: failed with %d (%s)\n", result,
-						iomanx_strerror(result));
+						strerror(-result));
 		exit(1);
 	}
 	ctx->setup = 1;
@@ -135,7 +131,7 @@ static int do_initialize(context_t *ctx, int argc, char *argv[]) {
 	} else {
 		int result = iomanx_format("hdd0:", NULL, NULL, 0);
 		if (result < 0)
-			fprintf(stderr, "(!) format: %s.\n", iomanx_strerror(result));
+			fprintf(stderr, "(!) format: %s.\n", strerror(-result));
 		return (result);
 	}
 }
@@ -151,7 +147,7 @@ static int do_mkfs(context_t *ctx, int argc, char *argv[]) {
 	int result =
 			iomanx_format("pfs:", tmp, (void *)&format_arg, sizeof(format_arg));
 	if (result < 0)
-		fprintf(stderr, "(!) %s: %s.\n", tmp, iomanx_strerror(result));
+		fprintf(stderr, "(!) %s: %s.\n", tmp, strerror(-result));
 	return (result);
 }
 
@@ -170,7 +166,7 @@ static int do_mkpart(context_t *ctx, int arg, char *argv[]) {
 	int result = iomanx_open(tmp, IOMANX_O_RDWR | IOMANX_O_CREAT, 0x0100);
 	if (result >= 0) (void)iomanx_close(result), result = 0;
 	if (result < 0)
-		fprintf(stderr, "(!) %s: %s.\n", argv[1], iomanx_strerror(result));
+		fprintf(stderr, "(!) %s: %s.\n", argv[1], strerror(-result));
 	return (result);
 }
 
@@ -178,7 +174,7 @@ static int do_ls(context_t *ctx, int argc, char *argv[]) {
 	if (!ctx->mount) {       /* no mount: list partitions */
 		int result = lspart(); /* in hl.c */
 		if (result < 0)
-			fprintf(stderr, "(!) lspart: %s.\n", iomanx_strerror(result));
+			fprintf(stderr, "(!) lspart: %s.\n", strerror(-result));
 		return (result);
 	} else { /* list objects in current directory */
 		char dir_path[256];
@@ -190,7 +186,7 @@ static int do_ls(context_t *ctx, int argc, char *argv[]) {
 			(void)iomanx_close(dh);
 			return (0);
 		} else {
-			fprintf(stderr, "(!) ls: %s\n", iomanx_strerror(dh));
+			fprintf(stderr, "(!) ls: %s\n", strerror(-dh));
 			return (dh);
 		}
 	}
@@ -204,7 +200,7 @@ static int do_mount(context_t *ctx, int argc, char *argv[]) {
 		ctx->mount = 1;
 		return (0);
 	} else {
-		fprintf(stderr, "(!) %s: %s.\n", ctx->mount_point, iomanx_strerror(result));
+		fprintf(stderr, "(!) %s: %s.\n", ctx->mount_point, strerror(-result));
 		return (result);
 	}
 }
@@ -215,7 +211,7 @@ static int do_umount(context_t *ctx, int argc, char *argv[]) {
 		ctx->mount = 0;
 		return (0);
 	} else {
-		fprintf(stderr, "(!) umount: %s.\n", iomanx_strerror(result));
+		fprintf(stderr, "(!) umount: %s.\n", strerror(-result));
 		return (result);
 	}
 }
@@ -249,7 +245,7 @@ static int do_cd(context_t *ctx, int argc, char *argv[]) {
 	strcat(tmp, ctx->path);
 	int result = iomanx_chdir(tmp);
 	if (result < 0) { /* error */
-		fprintf(stderr, "(!) %s: %s.\n", tmp, iomanx_strerror(result));
+		fprintf(stderr, "(!) %s: %s.\n", tmp, strerror(-result));
 		strcpy(ctx->path, backup); /* rollback */
 	}
 	return (result);
@@ -263,7 +259,7 @@ static int do_mkdir(context_t *ctx, int argc, char *argv[]) {
 	strcat(tmp, argv[1]);
 	int result = iomanx_mkdir(tmp, 0777);
 	if (result < 0)
-		fprintf(stderr, "(!) %s: %s.\n", tmp, iomanx_strerror(result));
+		fprintf(stderr, "(!) %s: %s.\n", tmp, strerror(-result));
 	return (result);
 }
 
@@ -275,7 +271,7 @@ static int do_rmdir(context_t *ctx, int argc, char *argv[]) {
 	strcat(tmp, argv[1]);
 	int result = iomanx_rmdir(tmp);
 	if (result < 0)
-		fprintf(stderr, "(!) %s: %s.\n", tmp, iomanx_strerror(result));
+		fprintf(stderr, "(!) %s: %s.\n", tmp, strerror(-result));
 	return (result);
 }
 
@@ -289,7 +285,7 @@ static int do_get(context_t *ctx, int argc, char *argv[]) {
 
 	int in = iomanx_open(tmp, IOMANX_O_RDONLY);
 	if (in >= 0) {
-		int out = open(argv[1], O_CREAT | O_WRONLY | O_BINARY, 0664);
+		int out = open(argv[1], O_CREAT | O_WRONLY, 0664);
 		if (out != -1) {
 			char buf[4096];
 			ssize_t len;
@@ -308,7 +304,7 @@ static int do_get(context_t *ctx, int argc, char *argv[]) {
 			perror(argv[1]), result = -1;
 		iomanx_close(in);
 	} else
-		fprintf(stderr, "(!) %s: %s.\n", tmp, iomanx_strerror(in)), result = in;
+		fprintf(stderr, "(!) %s: %s.\n", tmp, strerror(-in)), result = in;
 	return (result);
 }
 
@@ -320,7 +316,7 @@ static int do_put(context_t *ctx, int argc, char *argv[]) {
 	if (tmp[strlen(tmp) - 1] != '/') strcat(tmp, "/");
 	strcat(tmp, argv[1]);
 
-	int in = open(argv[1], O_RDONLY | O_BINARY);
+	int in = open(argv[1], O_RDONLY);
 	if (in != -1) {
 		int out = iomanx_open(tmp, IOMANX_O_WRONLY | IOMANX_O_CREAT, 0666);
 		if (out >= 0) {
@@ -330,7 +326,7 @@ static int do_put(context_t *ctx, int argc, char *argv[]) {
 				result = iomanx_write(out, buf, len);
 				if (result != len) {
 					if (result < 0)
-						fprintf(stderr, "(!) %s: %s.\n", tmp, iomanx_strerror(result));
+						fprintf(stderr, "(!) %s: %s.\n", tmp, strerror(-result));
 					else
 						fprintf(stderr, "(!) %s: wrote %d bytes instead of %lu.\n", tmp,
 										result, len);
@@ -342,7 +338,7 @@ static int do_put(context_t *ctx, int argc, char *argv[]) {
 			if (interrupt)
 				fputs("(!) Operation interrupted; data maybe partial.\n", stderr);
 		} else
-			fprintf(stderr, "(!) %s: %s.\n", tmp, iomanx_strerror(out)), result = out;
+			fprintf(stderr, "(!) %s: %s.\n", tmp, strerror(-out)), result = out;
 		(void)close(in);
 	} else
 		perror(argv[1]), result = -1;
@@ -357,7 +353,7 @@ static int do_rm(context_t *ctx, int argc, char *argv[]) {
 	strcat(tmp, argv[1]);
 	int result = iomanx_remove(tmp);
 	if (result < 0)
-		fprintf(stderr, "(!) %s: %s.\n", tmp, iomanx_strerror(result));
+		fprintf(stderr, "(!) %s: %s.\n", tmp, strerror(-result));
 	return (result);
 }
 
@@ -369,7 +365,7 @@ static int do_rename(context_t *ctx, int argc, char *argv[]) {
 	strcat(tmp, argv[1]);
 	int result = iomanx_rename(tmp, argv[2]);
 	if (result < 0)
-		fprintf(stderr, "(!) %s: %s.\n", tmp, iomanx_strerror(result));
+		fprintf(stderr, "(!) %s: %s.\n", tmp, strerror(-result));
 	return (result);
 }
 
@@ -379,7 +375,7 @@ static int do_rmpart(context_t *ctx, int argc, char *argv[]) {
 	strcat(tmp, argv[1]);
 	int result = iomanx_remove(tmp);
 	if (result < 0)
-		fprintf(stderr, "(!) %s: %s.\n", tmp, iomanx_strerror(result));
+		fprintf(stderr, "(!) %s: %s.\n", tmp, strerror(-result));
 	return (result);
 }
 

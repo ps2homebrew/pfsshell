@@ -816,8 +816,8 @@ static int ioctl2DeleteLastSub(hdd_file_slot_t *fileSlot)
 	return rv;
 }
 
-int hddIoctl2(iop_file_t *f, int req, void *argp, unsigned int arglen,
-			  void *bufp, unsigned int buflen)
+int hddIoctl2(iop_file_t *f, int req, void *argp, size_t arglen,
+			  void *bufp, size_t buflen)
 {
 	u32 rv=0, err_lba;
 	hdd_file_slot_t *fileSlot=f->privdata;
@@ -930,7 +930,7 @@ static int devctlSetOsdMBR(s32 device, hddSetOsdMBR_t *mbrInfo)
 }
 
 int hddDevctl(iop_file_t *f, const char *devname, int cmd, void *arg,
-			  unsigned int arglen, void *bufp, unsigned int buflen)
+			  size_t arglen, void *bufp, size_t buflen)
 {
 	int	rv=0;
 

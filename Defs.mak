@@ -1,9 +1,7 @@
 
 DEBUG = yes
 
-CFLAGS += -D_BUILD_UNIX -m32
-EXESUF =
-SOSUF = .dylib
+CFLAGS += -D_BUILD_UNIX 
 
 CFLAGS += -O0 -g -D_DEBUG
 #no debug: define NDEBUG

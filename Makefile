@@ -1,41 +1,35 @@
 include ./Defs.mak
 
-LDFLAGS += -Lapa -Lpfs -Lfake_sdk -LiomanX -Wl,-rpath,. 
-LDLIBS += -lpfs -lapa -liomanX -lfakeps2sdk -lpthread -lc
+LDLIBS += -lpthread -lc
 
 SOURCES += startup.c hl.c util.c shell.c
 OBJECTS += $(SOURCES:.c=.o)
-BINARY ?= pfsshell$(EXESUF)
-
+BINARY ?= pfsshell
 
 all: $(BINARY)
 
 clean:
-	$(MAKE) -C pfs/ XC=$(XC) clean
-	$(MAKE) -C fake_sdk/ XC=$(XC) clean
-	$(MAKE) -C apa/ XC=$(XC) clean
-	$(MAKE) -C iomanX/ XC=$(XC) clean
+	$(MAKE) -C pfs/ clean
+	$(MAKE) -C fake_sdk/ clean
+	$(MAKE) -C apa/ clean
+	$(MAKE) -C iomanX/ clean
 	rm -f $(OBJECTS) $(BINARY)
-	rm -f libapa$(SOSUF) libfakeps2sdk$(SOSUF) libiomanX$(SOSUF) libpfs$(SOSUF)
 
 hdd.img:
-	dd if=/dev/zero of=hdd.img bs=1024 seek=10000000 count=1
+	dd if=/dev/zero of=$@ bs=1024 seek=10000000 count=1
 
-libpfs: libiomanX
-	$(MAKE) -C pfs/
+pfs/libpfs.a: pfs iomanX/libiomanX.a
+	$(MAKE) -C $<
 
-libfakeps2sdk:
-	$(MAKE) -C fake_sdk/
+fake_sdk/libfakeps2sdk.a: fake_sdk
+	$(MAKE) -C $<
 
-libapa: libiomanX
-	$(MAKE) -C apa/
+apa/libapa.a: apa iomanX/libiomanX.a
+	$(MAKE) -C $<
 
-libiomanX: libfakeps2sdk
-	$(MAKE) -C iomanX/
+iomanX/libiomanX.a: iomanX fake_sdk/libfakeps2sdk.a
+	$(MAKE) -C $<
 
-$(BINARY): $(OBJECTS) libfakeps2sdk libiomanX libapa libpfs 
+$(BINARY): $(OBJECTS) fake_sdk/libfakeps2sdk.a iomanX/libiomanX.a apa/libapa.a pfs/libpfs.a
 	@echo -e "\tLNK $@"
-	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJECTS) $(LDLIBS)
-	@ln -sf apa/libapa$(SOSUF) pfs/libpfs$(SOSUF) \
-		iomanX/libiomanX$(SOSUF) fake_sdk/libfakeps2sdk$(SOSUF) ./
-
+	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)

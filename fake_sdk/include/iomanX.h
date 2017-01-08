@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "irx.h"
@@ -139,13 +138,13 @@ typedef struct _iop_device_ops {
 	int	(*rename)(iop_file_t *, const char *, const char *);
 	int	(*chdir)(iop_file_t *, const char *);
 	int	(*sync)(iop_file_t *, const char *, int);
-	int	(*mount)(iop_file_t *, const char *, const char *, int, void *, unsigned int);
+	int	(*mount)(iop_file_t *, const char *, const char *, int, void *, size_t);
 	int	(*umount)(iop_file_t *, const char *);
 	long long (*lseek64)(iop_file_t *, long long, int);
-	int	(*devctl)(iop_file_t *, const char *, int, void *, unsigned int, void *, unsigned int);
+	int	(*devctl)(iop_file_t *, const char *, int, void *, size_t, void *, size_t);
 	int	(*symlink)(iop_file_t *, const char *, const char *);
 	int	(*readlink)(iop_file_t *, const char *, char *, unsigned int);
-	int	(*ioctl2)(iop_file_t *, int, void *, unsigned int, void *, unsigned int);
+	int	(*ioctl2)(iop_file_t *, int, void *, size_t, void *, size_t);
 #endif /* IOMAN_NO_EXTENDED */
 } iop_device_ops_t;
 

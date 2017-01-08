@@ -152,5 +152,5 @@ int iomanx_symlink(const char *old, const char *new);
 int iomanx_readlink(const char *path, char *buf, size_t buflen);
 int iomanx_ioctl2(int fd, int cmd, void *arg, size_t arglen, void *buf, size_t buflen);
 
-const char* iomanx_strerror (int err);
+//const char* strerror (int err);
 

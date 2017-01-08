@@ -1,8 +1,5 @@
-test
 *.o
 .DS_Store
 pfsshell
-*.dylib
-*.so
+*.a
 *.IMG
-osd100

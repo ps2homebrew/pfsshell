@@ -6,7 +6,7 @@ LDFLAGS += -liomanX -L../iomanX
 
 CFLAGS += -I. -I./include -I./irx $(CFLAGS2)
 
-BINARY ?= libpfs$(SOSUF)
+BINARY ?= libpfs.a
 SOURCES += _init.c
 SOURCES += irx/pfs_fio.c irx/pfs_fioctl.c irx/pfs.c
 SOURCES += src/bitmap.c src/block.c src/blockWrite.c src/cache.c src/dir.c src/inode.c src/journal.c src/misc.c src/super.c src/superWrite.c
@@ -18,4 +18,4 @@ clean:
 	rm -f $(OBJECTS) $(BINARY)
 
 $(BINARY): $(OBJECTS)
-	$(link_shared)
+	ar rcs $@ $^

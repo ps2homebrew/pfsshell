@@ -22,13 +22,13 @@ int hddClose(iop_file_t *f);
 int hddRead(iop_file_t *f, void *buf, int size);
 int hddWrite(iop_file_t *f, void *buf, int size);
 int hddLseek(iop_file_t *f, int post, int whence);
-int hddIoctl2(iop_file_t *f, int request, void *argp, unsigned int arglen, void *bufp, unsigned intbuflen);
+int hddIoctl2(iop_file_t *f, int request, void *argp, size_t arglen, void *bufp, size_t intbuflen);
 int hddRemove(iop_file_t *f, const char *name);
 int hddDopen(iop_file_t *f, const char *name);
 int hddDread(iop_file_t *f, iox_dirent_t *dirent);
 int hddGetStat(iop_file_t *f, const char *name, iox_stat_t *stat);
 int hddReName(iop_file_t *f, const char *oldname, const char *newname);
-int hddDevctl(iop_file_t *f, const char *devname, int cmd, void *arg, unsigned int arglen, void *bufp, unsigned int buflen);
+int hddDevctl(iop_file_t *f, const char *devname, int cmd, void *arg, size_t arglen, void *bufp, size_t buflen);
 
 int hddUnsupported(iop_file_t *f);
 

@@ -1,17 +1,11 @@
 
-PFS (PlayStation File System) client for Linux/Mac/Unix
-=======================================================
+PFS (PlayStation File System) tool for Linux/Mac/Unix
+=====================================================
 
 Information
 ===========
 
-This is a tool to allow you to browse and send files to PFS filesystems.
-
-Not supported
-=============
-
-> GUI (currently)  
-> 64-bit (if you are reading PFS filesystems, it might cause a segfault)  
+This is a tool to allow you to browse and transfer files to/from PFS filesystems.
 
 Original source code
 ====================

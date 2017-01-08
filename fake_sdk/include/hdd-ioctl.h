@@ -1,4 +1,3 @@
-
 #pragma once
 
 //apa
@@ -8,7 +7,6 @@
 #define APA_TYPE_MBR		0x0001	// Master Boot Record
 #define APA_TYPE_EXT2SWAP	0x0082
 #define APA_TYPE_EXT2		0x0083
-#define APA_TYPE_REISER		0x0088
 #define APA_TYPE_PFS		0x0100
 #define APA_TYPE_CFS		0x0101
 

@@ -13,7 +13,7 @@
 */
 
 #include "types.h"
-#include "defs.h"
+//#include "defs.h"
 #include "loadcore.h"
 #include "iomanX.h"
 #include "sysclib.h"
@@ -35,8 +35,8 @@ iop_file_t file_table[MAX_FILES];
 
 extern struct irx_export_table _exp_iomanx;
 
-extern int hook_ioman();
-extern int unhook_ioman();
+// extern int hook_ioman();
+// extern int unhook_ioman();
 
 iop_device_t **GetDeviceList(void)
 {
@@ -63,7 +63,7 @@ int _start(int argc, char **argv)
 
 int shutdown()
 {
-//    unhook_ioman();
+    // unhook_ioman();
 	return MODULE_NO_RESIDENT_END;
 }
 

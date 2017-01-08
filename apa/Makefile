@@ -6,7 +6,7 @@ LDFLAGS += -L../iomanX -liomanX
 
 CFLAGS += -I./irx -I./include -I. $(CFLAGS2) 
 
-BINARY ?= libapa$(SOSUF)
+BINARY ?= libapa.a
 SOURCES += _init.c
 SOURCES += irx/hdd_fio.c irx/hdd.c
 SOURCES += src/apa.c src/cache.c src/journal.c src/misc.c src/password.c src/free.c
@@ -18,4 +18,4 @@ clean:
 	rm -f $(OBJECTS) $(BINARY)
 
 $(BINARY): $(OBJECTS)
-	$(link_shared)
+	ar rcs $@ $^

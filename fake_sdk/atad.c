@@ -8,32 +8,24 @@
 #include <string.h>
 #include "dbg.h"
 
-
-
-/* DONE */
-
-typedef int32_t s32;
 typedef uint32_t u32;
-typedef uint16_t u16;
-typedef uint8_t u8;
 
-typedef struct
-{
-  u32 devicePresent;
-  u32 supportPACKET;
-  u32 totalLBA;
-  u32 securityStatus;
-} t_shddInfo;
+/* These are used with the dir parameter of ata_device_sector_io().  */
+#define ATA_DIR_READ  0
+#define ATA_DIR_WRITE 1
 
-#define ATAD_MODE_READ 0x00
-#define ATAD_MODE_WRITE 0x01
-
+typedef struct _ata_devinfo {
+  u32 exists;   /* Was successfully probed.  */
+  u32 has_packet; /* Supports the PACKET command set.  */
+  u32 total_sectors;  /* Total number of user sectors.  */
+  u32 security_status;/* Word 0x100 of the identify info.  */
+} ata_devinfo_t;
 
 /* dd if=/dev/zero of=../hdd.img bs=1024 seek=49999999 count=1 */
 
 static int handle = -1;
 
-static unsigned long hdd_length = 0; /* in sectors */
+static u32 hdd_length = 0; /* in sectors */
 char atad_device_path[256] = { "/home/bobi/p/pfs/hdd.img" };
 void atad_close (void)
 {
@@ -57,32 +49,30 @@ init (void)
     perror (atad_device_path), exit (1);
 }
 
-t_shddInfo*
-atadInit (u32 device)
+ata_devinfo_t * ata_get_devinfo(int device)
 {
   if (handle == -1)
     init ();
 
-  static t_shddInfo info;
+  static ata_devinfo_t info;
   if (device == 0)
     {
-      info.devicePresent = 1;
-      info.supportPACKET = 0;
-      info.totalLBA = hdd_length;
-      info.securityStatus = 0;
+      info.exists = 1;
+      info.has_packet = 0;
+      info.total_sectors = hdd_length;
+      info.security_status = 0;
     }
   else
     {
-      info.devicePresent = 0;
-      info.supportPACKET = 0;
-      info.totalLBA = 0;
-      info.securityStatus = 0;
+      info.exists = 0;
+      info.has_packet = 0;
+      info.total_sectors = 0;
+      info.security_status = 0;
     }
   return (&info);
 }
 
-int
-atadDmaTransfer (int device, void *buf, u32 lba, u32 size, u32 mode)
+int ata_device_sector_io(int device, void *buf, u32 lba, u32 nsectors, int dir)
 {
   if (handle == -1)
     init ();
@@ -101,11 +91,11 @@ atadDmaTransfer (int device, void *buf, u32 lba, u32 size, u32 mode)
     }
 
   ssize_t len;
-  if (mode == ATAD_MODE_WRITE)
-    len = write (handle, buf, size * 512);
+  if (dir == ATA_DIR_WRITE)
+    len = write (handle, buf, nsectors * 512);
   else
-    len = read (handle, buf, size * 512);
-  if (len == size * 512)
+    len = read (handle, buf, nsectors * 512);
+  if (len == nsectors * 512)
     return (0); /* success */
   else
     {
