@@ -1,8 +1,7 @@
 #include "shell.h"
 
 
-int
-main (void)
+int main(void)
 {
-  return (shell (stdin, stdout, stderr));
+    return (shell(stdin, stdout, stderr));
 }

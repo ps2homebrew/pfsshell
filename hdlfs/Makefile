@@ -1,14 +1,15 @@
-IOP_BIN  = hdlfs.irx
-IOP_OBJS = main.o imports.o
+include ../Defs.mak
 
-IOP_CFLAGS  += -Wall -fno-builtin
-IOP_LDFLAGS += -s
-IOP_INCS += -I$(PS2SDK)/iop/include -I$(PS2SDK)/common/include
+CFLAGS += -I. $(CFLAGS2) 
 
-all: $(IOP_BIN)
+BINARY ?= libhdlfs.a
+SOURCES += _init.c main.c 
+OBJECTS += $(SOURCES:.c=.o)
+
+all: $(BINARY)
 
 clean:
-	rm -f $(IOP_BIN) $(IOP_OBJS)
+	rm -f $(OBJECTS) $(BINARY)
 
-include $(PS2SDK)/Defs.make
-include Rules.make
+$(BINARY): $(OBJECTS)
+	$(AR) rcs $@ $^

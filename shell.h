@@ -1,8 +1,5 @@
-#if !defined (_SHELL_H)
-#  define _SHELL_H
+#pragma once
 
 #include <stdio.h>
 
-int shell (FILE *in, FILE *out, FILE *err);
-
-#endif /* _SHELL_H defined? */
+int shell(FILE *in, FILE *out, FILE *err);

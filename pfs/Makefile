@@ -3,7 +3,6 @@ include ../Defs.mak
 LDFLAGS += -lfakeps2sdk -L../fake_sdk
 LDFLAGS += -liomanX -L../iomanX
 
-
 CFLAGS += -I. -I./include -I./irx $(CFLAGS2)
 
 BINARY ?= libpfs.a
@@ -18,4 +17,4 @@ clean:
 	rm -f $(OBJECTS) $(BINARY)
 
 $(BINARY): $(OBJECTS)
-	ar rcs $@ $^
+	$(AR) rcs $@ $^

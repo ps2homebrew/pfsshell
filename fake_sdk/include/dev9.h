@@ -1,3 +1,5 @@
 #pragma once
 
-#define dev9Shutdown() do {} while(0)
+#define dev9Shutdown() \
+    do {               \
+    } while (0)

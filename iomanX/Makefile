@@ -14,4 +14,4 @@ clean:
 	rm -f $(OBJECTS) $(BINARY)
 
 $(BINARY): $(OBJECTS)
-	ar rcs $@ $^
+	$(AR) rcs $@ $^

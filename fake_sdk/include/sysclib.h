@@ -5,10 +5,10 @@
 #include <stdint.h>
 #include <ctype.h>
 
-typedef	uint8_t u8;
+typedef uint8_t u8;
 typedef uint16_t u16;
 
-typedef	volatile uint8_t vu8;
+typedef volatile uint8_t vu8;
 typedef volatile uint16_t vu16;
 
 typedef uint32_t u32;
