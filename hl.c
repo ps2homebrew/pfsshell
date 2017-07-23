@@ -16,7 +16,7 @@ int copyto(const char *mount_point, const char *dest, const char *src)
 {
     int retval = 0;
     int in_file = open(src, O_RDONLY |
-#ifdef USE_BINARY_MODE
+#ifdef O_BINARY
                                 O_BINARY
 #else
                                 0
@@ -69,7 +69,7 @@ int copyfrom(const char *mount_point, const char *src, const char *dest)
 {
     int retval = 0;
     int out_file = open(dest, O_CREAT | O_WRONLY |
-#ifdef USE_BINARY_MODE
+#ifdef O_BINARY
                                   O_BINARY
 #else
                                   0

@@ -372,7 +372,7 @@ static int do_get(context_t *ctx, int argc, char *argv[])
     int in = iomanx_open(tmp, IOMANX_O_RDONLY);
     if (in >= 0) {
         int out = open(argv[1], O_CREAT | O_WRONLY |
-#ifdef USE_BINARY_MODE
+#ifdef O_BINARY
                                     O_BINARY
 #else
                                     0
@@ -410,7 +410,7 @@ static int do_put(context_t *ctx, int argc, char *argv[])
     strcat(tmp, argv[1]);
 
     int in = open(argv[1], O_RDONLY |
-#ifdef USE_BINARY_MODE
+#ifdef O_BINARY
                                O_BINARY
 #else
                                0
