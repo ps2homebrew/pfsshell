@@ -16,7 +16,7 @@
 #include "hdlfs.h"
 
 #define MODNAME "hdl_filesystem_driver"
-IRX_ID(MODNAME, 0x01, 0x01);
+IRX_ID(MODNAME, 0x01, 0x02);
 
 //#define DEBUG
 
@@ -25,6 +25,10 @@ IRX_ID(MODNAME, 0x01, 0x01);
 #else
 #define DEBUG_PRINTF(args...)
 #endif
+
+/* APA IOCTL2 commands */
+// Special HDD.IRX IOCTL2 command for supporting HDLFS
+//#define HIOCGETPARTSTART		0x00006836	// Get the sector number of the first sector of the partition.
 
 struct HDLFS_FileDescriptor
 {
@@ -169,6 +173,7 @@ static int hdlfs_close(iop_file_t *fd)
 static int hdlfs_io_internal(iop_file_t *fd, void *buffer, int size, int mode)
 {
     hddIoctl2Transfer_t CmdData;
+    struct HDLFS_FileDescriptor *hdlfs_fd;
     unsigned int SectorsToRead, SectorsRemaining, ReservedSectors, SectorsRemainingInPartition;
     int result;
 
@@ -177,7 +182,9 @@ static int hdlfs_io_internal(iop_file_t *fd, void *buffer, int size, int mode)
         return -EINVAL;
     }
 
-    WaitSema(((struct HDLFS_FileDescriptor *)fd->privdata)->SemaID);
+    hdlfs_fd = (struct HDLFS_FileDescriptor *)fd->privdata;
+
+    WaitSema(hdlfs_fd->SemaID);
 
     SectorsRemaining = size / 512;
     result = 0;
@@ -189,36 +196,36 @@ static int hdlfs_io_internal(iop_file_t *fd, void *buffer, int size, int mode)
 				3. Determine the first sector within the partition, at which data should be read/written from/to.
 		*/
 
-        SectorsRemainingInPartition = ((struct HDLFS_FileDescriptor *)fd->privdata)->part_specs[((struct HDLFS_FileDescriptor *)fd->privdata)->CurrentPartNum].part_size / 512 - ((struct HDLFS_FileDescriptor *)fd->privdata)->RelativeSectorNumber;
+        SectorsRemainingInPartition = hdlfs_fd->part_specs[hdlfs_fd->CurrentPartNum].part_size / 512 - hdlfs_fd->RelativeSectorNumber;
         /* If there are no more sectors in the current partition, move on. */
         if (SectorsRemainingInPartition < 1) {
-            ((struct HDLFS_FileDescriptor *)fd->privdata)->CurrentPartNum++;
-            ((struct HDLFS_FileDescriptor *)fd->privdata)->RelativeSectorNumber = 0;
-            SectorsRemainingInPartition = ((struct HDLFS_FileDescriptor *)fd->privdata)->part_specs[((struct HDLFS_FileDescriptor *)fd->privdata)->CurrentPartNum].part_size / 512;
+            hdlfs_fd->CurrentPartNum++;
+            hdlfs_fd->RelativeSectorNumber = 0;
+            SectorsRemainingInPartition = hdlfs_fd->part_specs[hdlfs_fd->CurrentPartNum].part_size / 512;
         }
 
-        ReservedSectors = ((struct HDLFS_FileDescriptor *)fd->privdata)->CurrentPartNum == 0 ? 0x2000 : 4;
+        ReservedSectors = hdlfs_fd->CurrentPartNum == 0 ? 0x2000 : 4;
         SectorsToRead = SectorsRemaining > SectorsRemainingInPartition ? SectorsRemainingInPartition : SectorsRemaining;
 
         /* If the calling program passes bogus arguments, the device driver called via ioctl2() should bail out. */
-        CmdData.sub = ((struct HDLFS_FileDescriptor *)fd->privdata)->CurrentPartNum;
-        CmdData.sector = ReservedSectors + ((struct HDLFS_FileDescriptor *)fd->privdata)->RelativeSectorNumber;
+        CmdData.sub = hdlfs_fd->CurrentPartNum;
+        CmdData.sector = ReservedSectors + hdlfs_fd->RelativeSectorNumber;
         CmdData.size = SectorsToRead;
         CmdData.mode = mode;
         CmdData.buffer = buffer;
 
-        if ((result = ioctl2(((struct HDLFS_FileDescriptor *)fd->privdata)->MountFD, HIOCTRANSFER, &CmdData, 0, NULL, 0)) < 0) {
-            DEBUG_PRINTF("HDLFS: I/O error occurred at partition %u, sector 0x%08lx, num sectors: %u, code: %d\n", ((struct HDLFS_FileDescriptor *)fd->privdata)->CurrentPartNum, ((struct HDLFS_FileDescriptor *)fd->privdata)->RelativeSectorNumber, SectorsToRead, result);
+        if ((result = ioctl2(hdlfs_fd->MountFD, HIOCTRANSFER, &CmdData, 0, NULL, 0)) < 0) {
+            DEBUG_PRINTF("HDLFS: I/O error occurred at partition %u, sector 0x%08lx, num sectors: %u, code: %d\n", hdlfs_fd->CurrentPartNum, hdlfs_fd->RelativeSectorNumber, SectorsToRead, result);
             break;
         }
 
-        ((struct HDLFS_FileDescriptor *)fd->privdata)->offset += SectorsToRead;
+        hdlfs_fd->offset += SectorsToRead;
         SectorsRemaining -= SectorsToRead;
-        buffer = (unsigned char *)(buffer + (SectorsToRead * 512));
-        ((struct HDLFS_FileDescriptor *)fd->privdata)->RelativeSectorNumber += SectorsToRead;
+        buffer = (u8 *)buffer + SectorsToRead * 512;
+        hdlfs_fd->RelativeSectorNumber += SectorsToRead;
     }
 
-    SignalSema(((struct HDLFS_FileDescriptor *)fd->privdata)->SemaID);
+    SignalSema(hdlfs_fd->SemaID);
 
     return ((result < 0) ? result : size);
 }
@@ -233,50 +240,43 @@ static int hdlfs_write(iop_file_t *fd, void *buffer, int size)
     return ((fd->mode & O_WRONLY) ? hdlfs_io_internal(fd, buffer, size, ATA_DIR_WRITE) : -EROFS);
 }
 
-static long long int hdlfs_lseek_internal(iop_file_t *fd, long long int offset, int whence)
+static int hdlfs_lseek(iop_file_t *fd, int offset, int whence)
 {
     unsigned int i;
-    unsigned long long int PartOffsetInBytes;
-    long long int result;
+    struct HDLFS_FileDescriptor *hdl_fd;
+    int result;
 
     if (fd->unit < MAX_AVAILABLE_FDs && FD_List[fd->unit].MountFD >= 0) {
-        if (offset >= 0 && offset % 512 == 0) {
-            WaitSema(((struct HDLFS_FileDescriptor *)fd->privdata)->SemaID);
+        hdl_fd = (struct HDLFS_FileDescriptor *)fd->privdata;
 
-            result = -EINVAL;
-            for (i = 0; i < ((struct HDLFS_FileDescriptor *)fd->privdata)->NumPartitions; i++) {
-                PartOffsetInBytes = (unsigned long long int)((struct HDLFS_FileDescriptor *)fd->privdata)->part_specs[i].part_offset * 2048;
-                if (PartOffsetInBytes <= offset && offset < PartOffsetInBytes + ((struct HDLFS_FileDescriptor *)fd->privdata)->part_specs[i].part_size) {
-                    switch (whence) {
-                        case SEEK_SET:
-                            ((struct HDLFS_FileDescriptor *)fd->privdata)->offset = offset / 512;
-                            break;
-                        case SEEK_CUR:
-                            ((struct HDLFS_FileDescriptor *)fd->privdata)->offset += offset / 512;
-                            break;
-                        case SEEK_END:
-                            ((struct HDLFS_FileDescriptor *)fd->privdata)->offset = ((struct HDLFS_FileDescriptor *)fd->privdata)->size - offset / 512;
-                    }
+        WaitSema(hdl_fd->SemaID);
 
-                    ((struct HDLFS_FileDescriptor *)fd->privdata)->RelativeSectorNumber = ((struct HDLFS_FileDescriptor *)fd->privdata)->offset - ((struct HDLFS_FileDescriptor *)fd->privdata)->part_specs[i].part_offset * 4;
-                    ((struct HDLFS_FileDescriptor *)fd->privdata)->CurrentPartNum = i;
-                    result = ((struct HDLFS_FileDescriptor *)fd->privdata)->offset * 512;
-                    break;
+        result = -EINVAL;
+        for (i = 0; i < hdl_fd->NumPartitions; i++) {
+            if (hdl_fd->part_specs[i].part_offset <= offset && offset < hdl_fd->part_specs[i].part_offset + hdl_fd->part_specs[i].part_size / 2048) {
+                switch (whence) {
+                    case SEEK_SET:
+                        hdl_fd->offset = offset * 4;
+                        break;
+                    case SEEK_CUR:
+                        hdl_fd->offset += offset * 4;
+                        break;
+                    case SEEK_END:
+                        hdl_fd->offset = hdl_fd->size - offset * 4;
                 }
-            }
 
-            SignalSema(((struct HDLFS_FileDescriptor *)fd->privdata)->SemaID);
-        } else
-            result = -EINVAL;
+                hdl_fd->RelativeSectorNumber = hdl_fd->offset - hdl_fd->part_specs[i].part_offset * 4;
+                hdl_fd->CurrentPartNum = i;
+                result = hdl_fd->offset / 4;
+                break;
+            }
+        }
+
+        SignalSema(hdl_fd->SemaID);
     } else
         result = -ENODEV;
 
     return result;
-}
-
-static int hdlfs_lseek(iop_file_t *fd, int offset, int whence)
-{
-    return ((int)hdlfs_lseek_internal(fd, offset, whence));
 }
 
 static int hdlfs_dopen(iop_file_t *fd, const char *path)
@@ -294,7 +294,7 @@ static int hdlfs_getstat_filler(int unit, const char *path, iox_stat_t *stat, ch
     int PartFD, result;
     hdl_game_info HDLGameInfo;
     unsigned int i;
-    u64 GameSize;
+    u32 GameSize;
 
     if (unit < MAX_AVAILABLE_FDs && FD_List[unit].MountFD >= 0) {
         PartFD = FD_List[unit].MountFD;
@@ -306,12 +306,11 @@ static int hdlfs_getstat_filler(int unit, const char *path, iox_stat_t *stat, ch
             if (stat != NULL) {
                 GameSize = 0;
                 for (i = 0; i < HDLGameInfo.num_partitions; i++)
-                    GameSize += HDLGameInfo.part_specs[i].part_size;
+                    GameSize += HDLGameInfo.part_specs[i].part_size / 2048;
 
                 memset(stat, 0, sizeof(iox_stat_t));
                 stat->attr = ((unsigned int)HDLGameInfo.dma_mode << 24) | ((unsigned int)HDLGameInfo.dma_type << 16) | ((unsigned int)HDLGameInfo.ops2l_compat_flags << 8) | HDLGameInfo.hdl_compat_flags;
-                stat->size = (unsigned int)GameSize;
-                stat->hisize = (unsigned int)(GameSize >> 32);
+                stat->size = GameSize;
                 stat->private_0 = (HDLGameInfo.discType << 16) | HDLGameInfo.num_partitions;
                 stat->private_1 = HDLGameInfo.layer1_start;
                 stat->private_5 = 0x2000; /* The relative LBA of the start of the game's disc image in the first partition. */
@@ -457,11 +456,6 @@ static int hdlfs_umount(iop_file_t *fd, const char *mountpoint)
     return unmount(fd->unit);
 }
 
-static long long hdlfs_lseek64(iop_file_t *fd, long long int offset, int whence)
-{
-    return (hdlfs_lseek_internal(fd, offset, whence));
-}
-
 static inline int hdlfs_UpdateGameTitle(int unit, const char *NewName, unsigned int len)
 {
     int result, PartFD;
@@ -537,7 +531,7 @@ static iop_device_ops_t hdlfs_functarray = {
     (void *)&hdlfs_NulldevFunction, /* SYNC */
     &hdlfs_mount,                   /* MOUNT */
     &hdlfs_umount,                  /* UMOUNT */
-    &hdlfs_lseek64,                 /* LSEEK64 */
+    (void *)&hdlfs_NulldevFunction, /* LSEEK64 */
     &hdlfs_devctl,                  /* DEVCTL */
     (void *)&hdlfs_NulldevFunction, /* SYMLINK */
     (void *)&hdlfs_NulldevFunction, /* READLINK */
