@@ -7,7 +7,7 @@
 #include <thsemap.h>
 #include <stdio.h>
 #include <sysclib.h>
-#include <sysmem.h>
+//#include <sysmem.h>
 #include <types.h>
 
 //#include <sys/stat.h>

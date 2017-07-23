@@ -23,12 +23,10 @@ typedef struct _ata_devinfo
     u32 security_status; /* Word 0x100 of the identify info.  */
 } ata_devinfo_t;
 
-/* dd if=/dev/zero of=../hdd.img bs=1024 seek=49999999 count=1 */
-
 static int handle = -1;
 
 static u32 hdd_length = 0; /* in sectors */
-char atad_device_path[256] = {"/home/bobi/p/pfs/hdd.img"};
+char atad_device_path[256] = {"hdd.img"};
 void atad_close(void)
 {
     if (handle != -1)
@@ -38,7 +36,7 @@ void atad_close(void)
 void init(void)
 {
     handle = open(atad_device_path, O_RDWR |
-#ifdef USE_BINARY_MODE
+#ifdef O_BINARY
                                         O_BINARY
 #else
                                         0
