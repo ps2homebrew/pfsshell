@@ -7,16 +7,19 @@
 # Copyright (c) 2004 adresd <adresd_ps2dev@yahoo.com>
 # Licenced under Academic Free License version 2.0
 # Review ps2sdk README & LICENSE files for further details.
-#
-# $Id$
-# Advanced I/O library.
 */
+
+/**
+ * @file
+ * Advanced I/O library.
+ */
 
 #include "types.h"
 //#include "defs.h"
 #include "loadcore.h"
 #include "iomanX.h"
 #include "sysclib.h"
+#include "stdarg.h"
 #include "intrman.h"
 //#include "sys/stat.h"
 
@@ -124,7 +127,7 @@ static char *find_iop_device(const char *dev, int *unit, iop_device_t **device)
         d--;
     }
 
-    if ((tail = strchr(d, ':')) == NULL)
+    if ((tail = index(d, ':')) == NULL)
         return (char *)-1;
 
     len = (int)(tail - d);
@@ -192,11 +195,16 @@ iop_file_t *get_new_file(void)
     return fd;
 }
 
-int open(const char *name, int flags, int mode)
+int open(const char *name, int flags, ...)
 {
     iop_file_t *f = get_new_file();
     char *filename;
-    int res = -ENOSYS;
+    va_list alist;
+    int res = -ENOSYS, mode;
+
+    va_start(alist, flags);
+    mode = va_arg(alist, int);
+    va_end(alist);
 
     if (!f) {
         return -EMFILE;
@@ -238,7 +246,7 @@ int close(int fd)
     return res;
 }
 
-int read(int fd, void *ptr, size_t size)
+int read(int fd, void *ptr, int size)
 {
     iop_file_t *f = get_file(fd);
 
@@ -248,7 +256,7 @@ int read(int fd, void *ptr, size_t size)
     return f->device->ops->read(f, ptr, size);
 }
 
-int write(int fd, void *ptr, size_t size)
+int write(int fd, void *ptr, int size)
 {
     iop_file_t *f = get_file(fd);
 
@@ -271,7 +279,7 @@ int lseek(int fd, int offset, int whence)
     return f->device->ops->lseek(f, offset, whence);
 }
 
-int ioctl(int fd, unsigned long cmd, void *arg)
+int ioctl(int fd, int cmd, void *arg)
 {
     iop_file_t *f = get_file(fd);
 
@@ -473,7 +481,7 @@ int chstat(const char *name, iox_stat_t *stat, unsigned int mask)
     return file.device->ops->chstat(&file, filename, stat, mask);
 }
 
-int format(const char *dev, const char *blockdev, void *arg, size_t arglen)
+int format(const char *dev, const char *blockdev, void *arg, int arglen)
 {
     iop_file_t file;
     char *filename;
@@ -495,7 +503,7 @@ static int link_common(const char *old, const char *new, int code)
         return -ENODEV;
 
     /* Make sure the user isn't attempting to link across devices.  */
-    if (strchr(new, ':') != NULL) {
+    if (index(new, ':') != NULL) {
         new_filename = find_iop_device(new, &new_unit, &new_device);
         if ((new_filename == (char *)-1) || (new_unit != file.unit) ||
             (new_device != file.device))
@@ -527,7 +535,7 @@ int sync(const char *dev, int flag)
     return path_common(dev, flag, 0x106);
 }
 
-int mount(const char *fsname, const char *devname, int flag, void *arg, size_t arglen)
+int mount(const char *fsname, const char *devname, int flag, void *arg, int arglen)
 {
     iop_file_t file;
     char *filename;
@@ -573,7 +581,7 @@ long long lseek64(int fd, long long offset, int whence)
     return f->device->ops->lseek64(f, offset, whence);
 }
 
-int devctl(const char *name, int cmd, void *arg, size_t arglen, void *buf, size_t buflen)
+int devctl(const char *name, int cmd, void *arg, unsigned int arglen, void *buf, unsigned int buflen)
 {
     iop_file_t file;
     char *filename;
@@ -593,7 +601,7 @@ int symlink(const char *old, const char *new)
     return link_common(old, new, 8);
 }
 
-int readlink(const char *name, char *buf, size_t buflen)
+int readlink(const char *name, char *buf, unsigned int buflen)
 {
     iop_file_t file;
     char *filename;
@@ -609,7 +617,7 @@ int readlink(const char *name, char *buf, size_t buflen)
 }
 
 
-int ioctl2(int fd, int command, void *arg, size_t arglen, void *buf, size_t buflen)
+int ioctl2(int fd, int command, void *arg, unsigned int arglen, void *buf, unsigned int buflen)
 {
     iop_file_t *f;
 

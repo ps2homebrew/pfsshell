@@ -7,17 +7,22 @@
 # Licenced under Academic Free License version 2.0
 # Review ps2sdk README & LICENSE files for further details.
 #
-# $Id$
 # PFS startup and misc code
 */
 
 #include <stdio.h>
+#ifdef _IOP
 #include <sysclib.h>
-#include <errno.h>
-#include <iomanX.h>
-#include <thsemap.h>
 #include <irx.h>
 #include <loadcore.h>
+#else
+#include <string.h>
+#include <stdlib.h>
+#include <loadcore.h>
+#endif
+#include <iomanX.h>
+#include <errno.h>
+#include <thsemap.h>
 
 #include "pfs-opt.h"
 #include "libpfs.h"
@@ -25,7 +30,9 @@
 #include "pfs_fio.h"
 #include "pfs_fioctl.h"
 
+#ifdef _IOP
 IRX_ID("pfs_driver", PFS_MAJOR, PFS_MINOR);
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 //	Globals
@@ -53,10 +60,10 @@ iop_device_ops_t pfsOps = {
     pfsFioSync,
     pfsFioMount,
     pfsFioUmount,
-    (void *)pfsFioUnsupported /*pfsFioLseek64*/,
+    pfsFioLseek64,
     pfsFioDevctl,
-    (void *)pfsFioUnsupported /*pfsFioSymlink*/,
-    (void *)pfsFioUnsupported /*pfsFioReadlink*/,
+    pfsFioSymlink,
+    pfsFioReadlink,
     pfsFioIoctl2};
 
 iop_device_t pfsFioDev = {
@@ -208,9 +215,14 @@ int _start(int argc, char *argv[])
         return MODULE_NO_RESIDENT_END;
 
     DelDrv("pfs");
-    AddDrv(&pfsFioDev);
+    if (AddDrv(&pfsFioDev) == 0) {
+#ifdef PFS_OSD_VER
+        PFS_PRINTF(PFS_DRV_NAME " Driver start. This is OSD version!\n");
+#else
+        PFS_PRINTF(PFS_DRV_NAME " Driver start.\n");
+#endif
+        return MODULE_RESIDENT_END;
+    }
 
-    PFS_PRINTF(PFS_DRV_NAME " Driver start.\n");
-
-    return MODULE_RESIDENT_END;
+    return MODULE_NO_RESIDENT_END;
 }

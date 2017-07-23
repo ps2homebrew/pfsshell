@@ -116,6 +116,7 @@ typedef struct _iop_device
 #define readlink iomanx_readlink
 #define ioctl2 iomanx_ioctl2
 
+
 typedef struct _iop_device_ops
 {
     int (*init)(iop_device_t *);
@@ -126,7 +127,7 @@ typedef struct _iop_device_ops
     int (*read)(iop_file_t *, void *, int);
     int (*write)(iop_file_t *, void *, int);
     int (*lseek)(iop_file_t *, int, int);
-    int (*ioctl)(iop_file_t *, unsigned long, void *);
+    int (*ioctl)(iop_file_t *, int, void *);
     int (*remove)(iop_file_t *, const char *);
     int (*mkdir)(iop_file_t *, const char *, int);
     int (*rmdir)(iop_file_t *, const char *);
@@ -141,9 +142,9 @@ typedef struct _iop_device_ops
     int (*rename)(iop_file_t *, const char *, const char *);
     int (*chdir)(iop_file_t *, const char *);
     int (*sync)(iop_file_t *, const char *, int);
-    int (*mount)(iop_file_t *, const char *, const char *, int, void *, size_t);
+    int (*mount)(iop_file_t *, const char *, const char *, int, void *, int);
     int (*umount)(iop_file_t *, const char *);
-    long long (*lseek64)(iop_file_t *, long long, int);
+    s64 (*lseek64)(iop_file_t *, s64, int);
     int (*devctl)(iop_file_t *, const char *, int, void *, size_t, void *, size_t);
     int (*symlink)(iop_file_t *, const char *, const char *);
     int (*readlink)(iop_file_t *, const char *, char *, unsigned int);
@@ -153,42 +154,44 @@ typedef struct _iop_device_ops
 
 iop_device_t **GetDeviceList(void);
 
-/* open() takes an optional mode argument.  */
-int open(const char *name, int flags, int mode);
+int open(const char *name, int flags, ...);
 int close(int fd);
-int read(int fd, void *ptr, size_t size);
-int write(int fd, void *ptr, size_t size);
+int read(int fd, void *ptr, int size);
+int write(int fd, void *ptr, int size);
 int lseek(int fd, int offset, int mode);
 
-int ioctl(int fd, unsigned long cmd, void *param);
+int ioctl(int fd, int cmd, void *param);
 int remove(const char *name);
 
-/* mkdir() takes an optional mode argument.  */
 int mkdir(const char *path, int mode);
 int rmdir(const char *path);
 int dopen(const char *path);
 int dclose(int fd);
-int dread(int fd, iox_dirent_t *iox_dirent);
+int dread(int fd, iox_dirent_t *buf);
 
 int getstat(const char *name, iox_stat_t *stat);
 int chstat(const char *name, iox_stat_t *stat, unsigned int statmask);
 
-//  This can take take more than one form.
-int format(const char *dev, const char *blockdev, void *arg, size_t arglen);
+/** This can take take more than one form.  */
+int format(const char *dev, const char *blockdev, void *arg, int arglen);
 
+/* The newer calls - these are NOT supported by the older IOMAN.  */
 int rename(const char *old, const char *new);
 int chdir(const char *name);
 int sync(const char *dev, int flag);
-int mount(const char *fsname, const char *devname, int flag, void *arg, size_t arglen);
+int mount(const char *fsname, const char *devname, int flag, void *arg, int arglen);
 int umount(const char *fsname);
-long long lseek64(int fd, long long offset, int whence);
-int devctl(const char *name, int cmd, void *arg, size_t arglen, void *buf, size_t buflen);
+s64 lseek64(int fd, s64 offset, int whence);
+int devctl(const char *name, int cmd, void *arg, unsigned int arglen, void *buf, unsigned int buflen);
 int symlink(const char *old, const char *new);
-int readlink(const char *path, char *buf, size_t buflen);
-int ioctl2(int fd, int cmd, void *arg, size_t arglen, void *buf, size_t buflen);
+int readlink(const char *path, char *buf, unsigned int buflen);
+int ioctl2(int fd, int cmd, void *arg, unsigned int arglen, void *buf, unsigned int buflen);
 
 int AddDrv(iop_device_t *device);
 int DelDrv(const char *name);
+
+void StdioInit(int mode);
+
 
 // Access flags for filesystem mount
 #define FIO_MT_RDWR 0x00

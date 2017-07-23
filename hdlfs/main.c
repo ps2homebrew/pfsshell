@@ -389,7 +389,7 @@ static int hdlfs_chstat(iop_file_t *fd, const char *path, iox_stat_t *stat, unsi
 }
 
 /* Here, mount the specified partition/device. */
-static int hdlfs_mount(iop_file_t *fd, const char *mountpoint, const char *blockdev, int flags, void *arg, size_t arglen)
+static int hdlfs_mount(iop_file_t *fd, const char *mountpoint, const char *blockdev, int flags, void *arg, int arglen)
 {
     iox_stat_t stat;
     hdl_game_info HDLGameInfo;

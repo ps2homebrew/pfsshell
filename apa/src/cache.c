@@ -7,13 +7,16 @@
 # Licenced under Academic Free License version 2.0
 # Review ps2sdk README & LICENSE files for further details.
 #
-# $Id$
 # APA cache manipulation routines
 */
 
 #include <errno.h>
 #include <iomanX.h>
+#ifdef _IOP
 #include <sysclib.h>
+#else
+#include <string.h>
+#endif
 #include <stdio.h>
 #include <hdd-ioctl.h>
 
@@ -27,7 +30,7 @@ static int cacheSize;
 int apaCacheInit(u32 size)
 {
     apa_header_t *header;
-    int i;
+    unsigned int i;
 
     cacheSize = size; // save size ;)
     if ((header = (apa_header_t *)apaAllocMem(size * sizeof(apa_header_t)))) {
@@ -89,7 +92,7 @@ void apaCacheFlushDirty(apa_cache_t *clink)
 
 int apaCacheFlushAllDirty(s32 device)
 {
-    u32 i;
+    int i;
     // flush apal
     for (i = 1; i < cacheSize + 1; i++) {
         if ((cacheBuf[i].flags & APA_CACHE_FLAG_DIRTY) && cacheBuf[i].device == device)

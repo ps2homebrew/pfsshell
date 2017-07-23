@@ -7,8 +7,6 @@
 # Copyright 2001-2004, ps2dev - http://www.ps2dev.org
 # Licenced under Academic Free License version 2.0
 # Review ps2sdk README & LICENSE files for further details.
-#
-# $Id$
 */
 
 #ifndef _LIBPFS_H
@@ -22,7 +20,8 @@
 #define PFS_SEGI_MAGIC 0x53454749     // "SEGI" aka segment descriptor indirect
 #define PFS_MAX_SUBPARTS 64
 #define PFS_NAME_LEN 255
-#define PFS_VERSION 4
+#define PFS_FORMAT_VERSION 3
+#define PFS_INODE_MAX_BLOCKS 114
 
 // attribute flags
 #define PFS_FIO_ATTR_READABLE 0x0001
@@ -119,7 +118,7 @@ typedef struct
 {
     u32 magic;            //
     u32 version;          //
-    u32 unknown1;         //
+    u32 modver;           //
     u32 pfsFsckStat;      //
     u32 zone_size;        //
     u32 num_subs;         // number of subs attached to filesystem
@@ -130,26 +129,26 @@ typedef struct
 // Inode structure
 typedef struct
 {
-    u32 checksum;                 // Sum of all other words in the inode
-    u32 magic;                    //
-    pfs_blockinfo_t inode_block;  // start block of inode
-    pfs_blockinfo_t next_segment; // next segment descriptor inode
-    pfs_blockinfo_t last_segment; // last segment descriptor inode
-    pfs_blockinfo_t unused;       //
-    pfs_blockinfo_t data[114];    //
-    u16 mode;                     // file mode
-    u16 attr;                     // file attributes
-    u16 uid;                      //
-    u16 gid;                      //
-    pfs_datetime_t atime;         //
-    pfs_datetime_t ctime;         //
-    pfs_datetime_t mtime;         //
-    u64 size;                     //
-    u32 number_blocks;            // number of blocks/zones used by file
-    u32 number_data;              // number of used entries in data array
-    u32 number_segdesg;           // number of "indirect blocks"/next segment descriptor's
-    u32 subpart;                  // subpart of inode
-    u32 reserved[4];              //
+    u32 checksum;                               // Sum of all other words in the inode
+    u32 magic;                                  //
+    pfs_blockinfo_t inode_block;                // start block of inode
+    pfs_blockinfo_t next_segment;               // next segment descriptor inode
+    pfs_blockinfo_t last_segment;               // last segment descriptor inode
+    pfs_blockinfo_t unused;                     //
+    pfs_blockinfo_t data[PFS_INODE_MAX_BLOCKS]; //
+    u16 mode;                                   // file mode
+    u16 attr;                                   // file attributes
+    u16 uid;                                    //
+    u16 gid;                                    //
+    pfs_datetime_t atime;                       //
+    pfs_datetime_t ctime;                       //
+    pfs_datetime_t mtime;                       //
+    u64 size;                                   //
+    u32 number_blocks;                          // number of blocks/zones used by file
+    u32 number_data;                            // number of used entries in data array
+    u32 number_segdesg;                         // number of "indirect blocks"/next segment descriptor's
+    u32 subpart;                                // subpart of inode
+    u32 reserved[4];                            //
 } pfs_inode_t;
 
 typedef struct
@@ -167,10 +166,10 @@ typedef struct
     pfs_block_device_t *blockDev; // call table for hdd(hddCallTable)
     int fd;                       //
     u32 flags;                    // rename to attr ones checked
-    u32 total_sector;             // number of sectors in the filesystem
+    u32 total_zones;              // number of zones in the filesystem
     u32 zfree;                    // zone free
-    u32 sector_scale;             //
-    u32 inode_scale;              //
+    u32 sector_scale;             // Number of sectors within a zone
+    u32 inode_scale;              // Number of inodes within a zone
     u32 zsize;                    // zone size
     u32 num_subs;                 // number of sub partitions in the filesystem
     pfs_blockinfo_t root_dir;     // block info for root directory
@@ -190,7 +189,7 @@ typedef struct pfs_cache_s
     u16 nused;                //
     pfs_mount_t *pfsMount;    //
     u32 sub;                  // main(0)/sub(+1) partition
-    u32 sector;               // block/sector for partition
+    u32 block;                // block within for partition
     union
     { //
         void *data;
@@ -233,13 +232,13 @@ pfs_cache_t *pfsCacheUnLink(pfs_cache_t *clink);
 pfs_cache_t *pfsCacheUsedAdd(pfs_cache_t *clink);
 int pfsCacheTransfer(pfs_cache_t *clink, int mode);
 void pfsCacheFlushAllDirty(pfs_mount_t *pfsMount);
-pfs_cache_t *pfsCacheAlloc(pfs_mount_t *pfsMount, u16 sub, u32 scale, int flags, int *result);
-pfs_cache_t *pfsCacheGetData(pfs_mount_t *pfsMount, u16 sub, u32 scale, int flags, int *result);
+pfs_cache_t *pfsCacheAlloc(pfs_mount_t *pfsMount, u16 sub, u32 block, int flags, int *result);
+pfs_cache_t *pfsCacheGetData(pfs_mount_t *pfsMount, u16 sub, u32 block, int flags, int *result);
 pfs_cache_t *pfsCacheAllocClean(int *result);
 int pfsCacheIsFull(void);
 int pfsCacheInit(u32 numBuf, u32 bufSize);
 void pfsCacheClose(pfs_mount_t *pfsMount);
-void pfsCacheMarkClean(pfs_mount_t *pfsMount, u32 subpart, u32 sectorStart, u32 sectorEnd);
+void pfsCacheMarkClean(pfs_mount_t *pfsMount, u32 subpart, u32 blockStart, u32 blockEnd);
 
 ///////////////////////////////////////////////////////////////////////////////
 //	Bitmap functions
@@ -334,7 +333,7 @@ int pfsGetTime(pfs_datetime_t *tm);
 void pfsPrintBitmap(const u32 *bitmap);
 
 pfs_block_device_t *pfsGetBlockDeviceTable(const char *name);
-int pfsGetScale(int num, int size);
+u32 pfsGetScale(u32 num, u32 size);
 u32 pfsFixIndex(u32 index);
 
 #endif /* _LIBPFS_H */

@@ -7,14 +7,17 @@
 # Licenced under Academic Free License version 2.0
 # Review ps2sdk README & LICENSE files for further details.
 #
-# $Id$
 # Password-handling routines
 */
 
 #include <errno.h>
 #include <iomanX.h>
 #include <atad.h>
+#ifdef _IOP
 #include <sysclib.h>
+#else
+#include <string.h>
+#endif
 #include <stdio.h>
 #include <hdd-ioctl.h>
 

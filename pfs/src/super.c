@@ -7,19 +7,23 @@
 # Licenced under Academic Free License version 2.0
 # Review ps2sdk README & LICENSE files for further details.
 #
-# $Id$
 # PFS superblock manipulation routines
 */
 
+#include <sysclib.h>
 #include <errno.h>
 #include <stdio.h>
+#ifdef _IOP
 #include <sysclib.h>
+#else
+#include <string.h>
+#endif
 #include <hdd-ioctl.h>
 
 #include "pfs-opt.h"
 #include "libpfs.h"
 
-int pfsBlockSize = 1;   // block size(in sectors(512) )
+u32 pfsBlockSize = 1;   // block size scale in sectors (512). Note that 0 = 1x
 u32 pfsMetaSize = 1024; // size of each metadata structure
 
 int pfsCheckZoneSize(u32 zone_size)

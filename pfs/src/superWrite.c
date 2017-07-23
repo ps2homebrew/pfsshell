@@ -7,19 +7,23 @@
 # Licenced under Academic Free License version 2.0
 # Review ps2sdk README & LICENSE files for further details.
 #
-# $Id$
 # PFS superblock (write) manipulation routines
 */
 
+#include <sysclib.h>
 #include <errno.h>
 #include <stdio.h>
+#ifdef _IOP
 #include <sysclib.h>
+#else
+#include <string.h>
+#endif
 #include <hdd-ioctl.h>
 
 #include "pfs-opt.h"
 #include "libpfs.h"
 
-extern int pfsBlockSize;
+extern u32 pfsBlockSize;
 extern u32 pfsMetaSize;
 
 // Formats a partition (main or sub) by filling with fragment pattern and setting the bitmap accordingly
@@ -27,6 +31,7 @@ int pfsFormatSub(pfs_block_device_t *blockDev, int fd, u32 sub, u32 reserved, u3
 {
     pfs_cache_t *cache;
     int i;
+    unsigned int j;
     u32 sector, count, size, *b;
     int result = 0;
 
@@ -44,10 +49,10 @@ int pfsFormatSub(pfs_block_device_t *blockDev, int fd, u32 sub, u32 reserved, u3
 
         // set as allocated the sectors up to reserved, for the first part of the bitmap
         // this will mark the area the bitmaps themselves occupy as used
-        for (i = 0, b = cache->u.bitmap; i < reserved; i++) {
-            if (i && ((i & 0x1F) == 0))
+        for (j = 0, b = cache->u.bitmap; j < reserved; j++) {
+            if (j && ((j & 0x1F) == 0))
                 b++;
-            *b |= 1 << (i & 0x1F);
+            *b |= 1 << (j & 0x1F);
         }
 
         PFS_PRINTF(PFS_DRV_NAME ": Format sub: sub = %ld, sector start = %ld, ", sub, sector);
@@ -83,8 +88,8 @@ int pfsFormat(pfs_block_device_t *blockDev, int fd, int zonesize, int fragment)
         sb = clink->u.superblock;
         memset(sb, 0, pfsMetaSize);
         sb->magic = PFS_SUPER_MAGIC;
-        sb->version = 3;
-        sb->unknown1 = 0x201;
+        sb->version = PFS_FORMAT_VERSION;
+        sb->modver = ((PFS_MAJOR << 8) | PFS_MINOR);
         sb->zone_size = zonesize;
         sb->num_subs = subnumber;
         sb->log.number = pfsGetBitmapSizeBlocks(scale, mainsize) + (0x2000 >> scale) + 1;
@@ -136,13 +141,11 @@ int pfsUpdateSuperBlock(pfs_mount_t *pfsMount, pfs_super_block_t *superblock, u3
 {
     u32 scale;
     u32 i;
-    u32 count;
     int rv;
 
     scale = pfsGetScale(superblock->zone_size, 512);
-    count = superblock->num_subs + sub + 1;
 
-    for (i = superblock->num_subs + 1; i < count; i++) {
+    for (i = superblock->num_subs + 1; i < sub + 1; i++) {
         rv = pfsFormatSub(pfsMount->blockDev, pfsMount->fd, i, 1, scale, 0);
         if (rv < 0)
             return rv;
@@ -184,7 +187,7 @@ int pfsMountSuperBlock(pfs_mount_t *pfsMount)
     if (result)
         goto error;
 
-    if ((superblock->magic != PFS_SUPER_MAGIC) || (superblock->version >= PFS_VERSION)) {
+    if ((superblock->magic != PFS_SUPER_MAGIC) || (superblock->version > PFS_FORMAT_VERSION)) {
         PFS_PRINTF(PFS_DRV_NAME ": Error: Invalid magic/version\n");
         pfsCacheFree(clink);
         return -EIO;
@@ -220,7 +223,7 @@ int pfsMountSuperBlock(pfs_mount_t *pfsMount)
     memcpy(&pfsMount->root_dir, &superblock->root, sizeof(pfs_blockinfo_t));
     memcpy(&pfsMount->log, &superblock->log, sizeof(pfs_blockinfo_t));
     memcpy(&pfsMount->current_dir, &superblock->root, sizeof(pfs_blockinfo_t));
-    pfsMount->total_sector = 0;
+    pfsMount->total_zones = 0;
     pfsMount->uid = 0;
     pfsMount->gid = 0;
 
@@ -231,7 +234,7 @@ int pfsMountSuperBlock(pfs_mount_t *pfsMount)
     for (i = 0; i < (pfsMount->num_subs + 1); i++) {
         int free;
 
-        pfsMount->total_sector += pfsMount->blockDev->getSize(pfsMount->fd, i) >> pfsMount->sector_scale;
+        pfsMount->total_zones += pfsMount->blockDev->getSize(pfsMount->fd, i) >> pfsMount->sector_scale;
 
         free = pfsBitmapCalcFreeZones(pfsMount, i);
         pfsMount->free_zone[i] = free;

@@ -6,8 +6,6 @@
 # Copyright 2001-2004, ps2dev - http://www.ps2dev.org
 # Licenced under Academic Free License version 2.0
 # Review ps2sdk README & LICENSE files for further details.
-#
-# $Id$
 */
 
 #ifndef _PFS_FIO_H
@@ -45,12 +43,10 @@ int pfsFioChstat(iop_file_t *f, const char *name, iox_stat_t *stat, unsigned int
 int pfsFioRename(iop_file_t *f, const char *old, const char *new);
 int pfsFioChdir(iop_file_t *f, const char *name);
 int pfsFioSync(iop_file_t *f, const char *dev, int flag);
-int pfsFioMount(iop_file_t *f, const char *fsname, const char *devname, int flag, void *arg, size_t arglen);
+int pfsFioMount(iop_file_t *f, const char *fsname, const char *devname, int flag, void *arg, int arglen);
 int pfsFioUmount(iop_file_t *f, const char *fsname);
 s64 pfsFioLseek64(iop_file_t *f, s64 offset, int whence);
 int pfsFioSymlink(iop_file_t *f, const char *old, const char *new);
-int pfsFioReadlink(iop_file_t *f, const char *path, char *buf, int buflen);
-
-int pfsFioUnsupported(void);
+int pfsFioReadlink(iop_file_t *f, const char *path, char *buf, unsigned int buflen);
 
 #endif /* _PFS_FIO_H */

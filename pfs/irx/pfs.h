@@ -6,8 +6,6 @@
 # Copyright 2001-2004, ps2dev - http://www.ps2dev.org
 # Licenced under Academic Free License version 2.0
 # Review ps2sdk README & LICENSE files for further details.
-#
-# $Id$
 */
 
 #ifndef _PFS_H
@@ -17,18 +15,16 @@
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
-#define PFS_MAJOR 1
-#define PFS_MINOR 4
-
 ///////////////////////////////////////////////////////////////////////////////
 //   Global types
 
 typedef struct
 {
-    u16 dirty;  //
-    u16 sub;    // Sub/main partition
-    u32 sector; // Sector
-} pfs_restsInfo_t;
+    u16 dirty;      // Whether the buffer is dirty or not.
+    u16 sub;        // Sub/main partition
+    u32 sector;     // Sector
+    u8 buffer[512]; // used for reading mis-aligned/remainder data
+} pfs_unaligned_io_t;
 
 typedef struct
 {
@@ -38,13 +34,12 @@ typedef struct
 
 typedef struct
 {
-    iop_file_t *fd;            //
-    pfs_cache_t *clink;        //
-    u32 aentryOffset;          // used for read offset
-    u64 position;              //
-    pfs_blockpos_t block_pos;  // current position into file
-    pfs_restsInfo_t restsInfo; //
-    u8 restsBuffer[512];       // used for reading mis-aligned/remainder data
+    iop_file_t *fd;               //
+    pfs_cache_t *clink;           //
+    u32 aentryOffset;             // used for read offset
+    u64 position;                 //
+    pfs_blockpos_t block_pos;     // current position into file
+    pfs_unaligned_io_t unaligned; // Contains unaligned data (data can only be read from the HDD in units of 512)
 } pfs_file_slot_t;
 
 typedef struct

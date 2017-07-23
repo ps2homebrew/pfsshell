@@ -7,18 +7,22 @@
 # Licenced under Academic Free License version 2.0
 # Review ps2sdk README & LICENSE files for further details.
 #
-# $Id$
 # PFS metadata journal related routines
 */
 
-#include <stdio.h>
 #include <sysclib.h>
+#include <stdio.h>
+#ifdef _IOP
+#include <sysclib.h>
+#else
+#include <string.h>
+#endif
 #include <hdd-ioctl.h>
 
 #include "pfs-opt.h"
 #include "libpfs.h"
 
-extern int pfsBlockSize;
+extern u32 pfsBlockSize;
 
 ///////////////////////////////////////////////////////////////////////////////
 //	Globals
@@ -47,7 +51,7 @@ void pfsJournalWrite(pfs_mount_t *pfsMount, pfs_cache_t *clink, u32 pfsCacheNumB
         if ((clink[i].flags & PFS_CACHE_FLAG_DIRTY) && clink[i].pfsMount == pfsMount) {
             if (clink[i].flags & (PFS_CACHE_FLAG_SEGD | PFS_CACHE_FLAG_SEGI))
                 clink[i].u.inode->checksum = pfsInodeCheckSum(clink[i].u.inode);
-            pfsJournalBuf.log[pfsJournalBuf.num].sector = clink[i].sector << pfsBlockSize;
+            pfsJournalBuf.log[pfsJournalBuf.num].sector = clink[i].block << pfsBlockSize;
             pfsJournalBuf.log[pfsJournalBuf.num].sub = clink[i].sub;
             pfsJournalBuf.log[pfsJournalBuf.num].logSector = logSector;
             pfsJournalBuf.num += 1;

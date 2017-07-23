@@ -7,13 +7,17 @@
 # Licenced under Academic Free License version 2.0
 # Review ps2sdk README & LICENSE files for further details.
 #
-# $Id$
 # PFS block/zone (write) related routines
 */
 
+#include <sysclib.h>
 #include <errno.h>
 #include <stdio.h>
+#ifdef _IOP
 #include <sysclib.h>
+#else
+#include <string.h>
+#endif
 
 #include "pfs-opt.h"
 #include "libpfs.h"
@@ -70,8 +74,8 @@ int pfsBlockAllocNewSegment(pfs_cache_t *clink, pfs_blockpos_t *blockpos, u32 bl
         clink2->u.inode->magic = PFS_SEGI_MAGIC;
 
         memcpy(&clink2->u.inode->inode_block, &clink->u.inode->inode_block, sizeof(pfs_blockinfo_t));
-        memcpy(&clink2->u.inode->last_segment, blockpos->inode->u.inode->data, sizeof(pfs_blockinfo_t));
-        memcpy(clink2->u.inode->data, &bi, sizeof(pfs_blockinfo_t));
+        memcpy(&clink2->u.inode->last_segment, &blockpos->inode->u.inode->data[0], sizeof(pfs_blockinfo_t));
+        memcpy(&clink2->u.inode->data[0], &bi, sizeof(pfs_blockinfo_t));
 
         clink2->flags |= PFS_CACHE_FLAG_DIRTY;
 

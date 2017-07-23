@@ -7,7 +7,7 @@ else
 AR = ar
 endif
 
-CFLAGS += -O0 -g -Wall -Wno-unused-value -Wno-format -m32
+CFLAGS += -O0 -g -Wall -Wno-unused-value -Wno-format
 
 CFLAGS2 += -I../fake_sdk/include
 

@@ -6,8 +6,6 @@
 # Copyright 2001-2004, ps2dev - http://www.ps2dev.org
 # Licenced under Academic Free License version 2.0
 # Review ps2sdk README & LICENSE files for further details.
-#
-# $Id$
 */
 
 #ifndef _LIBAPA_H
@@ -24,8 +22,6 @@
 #define APA_MAGIC 0x00415041 // 'APA\0'
 #define APA_MBR_VERSION 2
 
-#define APA_MODVER_MAJOR 2
-#define APA_MODVER_MINOR 1
 #define APA_MODVER ((APA_MODVER_MAJOR << 8) | APA_MODVER_MINOR)
 
 typedef struct
