@@ -1,5 +1,5 @@
 #pragma once
-#include <stdint.h>
+#include <stdlib.h>
 
 /*
  * most constants were prefixed with `IOMANX_' because
