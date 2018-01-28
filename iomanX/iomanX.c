@@ -23,6 +23,8 @@
 #include "intrman.h"
 //#include "sys/stat.h"
 
+#define index strchr
+
 #define MODNAME "iomanx"
 IRX_ID("IOX/File_Manager", 1, 1);
 
