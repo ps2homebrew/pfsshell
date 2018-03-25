@@ -7,7 +7,12 @@
 #include <string.h>
 #include "dbg.h"
 
+#ifdef __APPLE__
+#include <sys/disk.h>
+#endif
+
 typedef uint32_t u32;
+typedef uint64_t u64;
 
 /* These are used with the dir parameter of ata_device_sector_io().  */
 #define ATA_DIR_READ 0
@@ -41,11 +46,30 @@ void init(void)
 #endif
                   );
     if (handle != -1) {
+#ifdef __APPLE__
+        u64 size = 0, sector_count = 0;
+        u32 sector_size = 0;
+        if ( ioctl(handle, DKIOCGETBLOCKCOUNT, &sector_count) == 0 ) {
+            ioctl(handle, DKIOCGETBLOCKSIZE, &sector_size);
+            if ( sector_size != 512 )
+                size = ((sector_count * sector_size) - 511) / 512;
+            else
+                size = sector_count;
+            if ( (int64_t)size >= 0 )
+                hdd_length = size;
+            else
+                perror(atad_device_path), exit(1);
+        } else if ( errno == ENOTTY ) {
+            /* Not a device. Fall back to lseek */
+#endif
         off_t size = lseek(handle, 0, SEEK_END);
         if (size != (off_t)-1)
             hdd_length = (size - 511) / 512;
         else
             perror(atad_device_path), exit(1);
+#ifdef __APPLE__
+        }
+#endif
     } else
         perror(atad_device_path), exit(1);
 }

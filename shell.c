@@ -229,9 +229,9 @@ static int do_mkpart(context_t *ctx, int arg, char *argv[])
 
     char tmp[256];
     if (size_in_mb >= 1024)
-        sprintf(tmp, "hdd0:%s,,,%dG", argv[1], size_in_mb / 1024);
+        sprintf(tmp, "hdd0:%s,,,%dG,PFS", argv[1], size_in_mb / 1024);
     else
-        sprintf(tmp, "hdd0:%s,,,%dM", argv[1], size_in_mb);
+        sprintf(tmp, "hdd0:%s,,,%dM,PFS", argv[1], size_in_mb);
     int result = iomanx_open(tmp, IOMANX_O_RDWR | IOMANX_O_CREAT, 0x0100);
     if (result >= 0)
         (void)iomanx_close(result), result = 0;
