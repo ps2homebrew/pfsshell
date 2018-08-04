@@ -10,7 +10,6 @@
 # PFS block/zone related routines
 */
 
-#include <sysclib.h>
 #include <errno.h>
 #include <stdio.h>
 #ifdef _IOP

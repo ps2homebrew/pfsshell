@@ -10,7 +10,6 @@
 # PFS low-level inode manipulation routines
 */
 
-#include <sysclib.h>
 #include <errno.h>
 #include <stdio.h>
 #ifdef _IOP
@@ -57,6 +56,12 @@ void pfsInodeSetTime(pfs_cache_t *clink)
     memcpy(&clink->u.inode->ctime, &clink->u.inode->mtime, sizeof(pfs_datetime_t));
     memcpy(&clink->u.inode->atime, &clink->u.inode->mtime, sizeof(pfs_datetime_t));
     clink->flags |= PFS_CACHE_FLAG_DIRTY;
+}
+
+void pfsInodeSetTimeParent(pfs_cache_t *parent, pfs_cache_t *self)
+{ // set the inode time's in cache
+    pfsInodeSetTime(parent);
+    self->flags |= PFS_CACHE_FLAG_DIRTY;
 }
 
 int pfsInodeSync(pfs_blockpos_t *blockpos, u64 size, u32 used_segments)

@@ -3,6 +3,10 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
 #include "iomanX_port.h"
 
 
@@ -10,13 +14,7 @@
 int copyto(const char *mount_point, const char *dest, const char *src)
 {
     int retval = 0;
-    int in_file = open(src, O_RDONLY |
-#ifdef O_BINARY
-                                O_BINARY
-#else
-                                0
-#endif
-                       );
+    int in_file = open(src, O_RDONLY | O_BINARY);
     if (in_file != -1) {
         int result = iomanx_mount("pfs0:", mount_point, 0, NULL, 0);
         if (result >= 0) { /* mount successful */
@@ -63,14 +61,7 @@ int copyto(const char *mount_point, const char *dest, const char *src)
 int copyfrom(const char *mount_point, const char *src, const char *dest)
 {
     int retval = 0;
-    int out_file = open(dest, O_CREAT | O_WRONLY |
-#ifdef O_BINARY
-                                  O_BINARY
-#else
-                                  0
-#endif
-                        ,
-                        0664);
+    int out_file = open(dest, O_CREAT | O_WRONLY | O_BINARY, 0664);
     if (out_file != -1) {
         int result = iomanx_mount("pfs0:", mount_point, 0, NULL, 0);
         if (result >= 0) { /* mount successful */

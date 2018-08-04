@@ -7,16 +7,19 @@
 # Licenced under Academic Free License version 2.0
 # Review ps2sdk README & LICENSE files for further details.
 #
-# $Id$
 # APA File System routines
 */
 
 #include <stdio.h>
+#ifdef _IOP
 #include <irx.h>
-#include <atad.h>
-#include <dev9.h>
 #include <loadcore.h>
 #include <sysclib.h>
+#else
+#include <string.h>
+#endif
+#include <atad.h>
+#include <dev9.h>
 #include <errno.h>
 #include <iomanX.h>
 #include <thsemap.h>
@@ -29,7 +32,7 @@
 
 hdd_file_slot_t *hddFileSlots;
 int fioSema;
-u32 apaMaxOpen = 1;
+int apaMaxOpen = 1;
 
 extern const char apaMBRMagic[];
 extern apa_device_t hddDevices[];
@@ -69,7 +72,7 @@ static int fioPartitionSizeLookUp(char *str)
 
 static int fioInputBreaker(char const **arg, char *outBuf, int maxout)
 {
-    u32 len;
+    int len;
     char *p;
 
     if ((p = strchr(arg[0], ','))) {
@@ -102,8 +105,7 @@ static int fioGetInput(const char *arg, apa_params_t *params)
         {"PFS", APA_TYPE_PFS},
         {"CFS", APA_TYPE_CFS},
         {"EXT2", APA_TYPE_EXT2},
-        {"EXT2SWAP", APA_TYPE_EXT2SWAP},
-        {"HDL", APA_TYPE_HDL}};
+        {"EXT2SWAP", APA_TYPE_EXT2SWAP}};
 
     if (params == NULL)
         return -EINVAL;
@@ -149,14 +151,14 @@ static int fioGetInput(const char *arg, apa_params_t *params)
     if ((rv = fioInputBreaker(&arg, argBuf, sizeof(argBuf))) != 0)
         return rv;
 
-    for (i = 0; i < 5; i++) {
+    for (i = 0; i < 4; i++) {
         if (!strcmp(argBuf, fsTypes[i].desc)) {
             params->type = fsTypes[i].type;
             break;
         }
     }
 
-    if (i == 5) {
+    if (i == 4) {
         printf("hdd: error: Invalid fstype, %s.\n", argBuf);
         return -EINVAL;
     }
@@ -388,10 +390,10 @@ static int apaOpen(s32 device, hdd_file_slot_t *fileSlot, apa_params_t *params, 
 
 static int apaRemove(s32 device, const char *id, const char *fpwd)
 {
-    u32 nsub, i;
+    u32 nsub;
     apa_cache_t *clink;
     apa_cache_t *clink2;
-    int rv;
+    int rv, i;
 
     for (i = 0; i < apaMaxOpen; i++) // look to see if open
     {
@@ -582,13 +584,10 @@ int hddLseek(iop_file_t *f, int post, int whence)
 
 static void fioGetStatFiller(apa_cache_t *clink, iox_stat_t *stat)
 {
-    apa_header_t *header;
-
     stat->mode = clink->header->type;
     stat->attr = clink->header->flags;
     stat->hisize = 0;
     stat->size = clink->header->length;
-    header = clink->header;
     memcpy(&stat->ctime, &clink->header->created, sizeof(apa_ps2time_t));
     memcpy(&stat->atime, &clink->header->created, sizeof(apa_ps2time_t));
     memcpy(&stat->mtime, &clink->header->created, sizeof(apa_ps2time_t));
@@ -836,10 +835,6 @@ int hddIoctl2(iop_file_t *f, int req, void *argp, size_t arglen,
                     apaSetPartErrorSector(f->unit, 0); // clear last error :)
                 }
             }
-            break;
-
-        case HIOCGETPARTSTART:
-            rv = fileSlot->parts[*(u32 *)argp].start;
             break;
 
         default:

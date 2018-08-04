@@ -10,11 +10,11 @@
 # PFS metadata journal related routines
 */
 
-#include <sysclib.h>
 #include <stdio.h>
 #ifdef _IOP
 #include <sysclib.h>
 #else
+#include <sysclib.h>
 #include <string.h>
 #endif
 #include <hdd-ioctl.h>

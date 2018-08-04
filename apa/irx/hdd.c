@@ -7,16 +7,22 @@
 # Licenced under Academic Free License version 2.0
 # Review ps2sdk README & LICENSE files for further details.
 #
-# $Id$
 # Start Up routines
 */
 
 #include <stdio.h>
-#include <irx.h>
-#include <atad.h>
-#include <loadcore.h>
+#ifdef _IOP
 #include <sysclib.h>
+#include <loadcore.h>
+#else
+#include <loadcore.h>
+#include <string.h>
+#include <stdlib.h>
+#endif
+#include <atad.h>
+#include <dev9.h>
 #include <errno.h>
+#include <irx.h>
 #include <iomanX.h>
 #include <hdd-ioctl.h>
 
@@ -25,7 +31,9 @@
 #include "hdd.h"
 #include "hdd_fio.h"
 
+#ifdef _IOP
 IRX_ID("hdd_driver", APA_MODVER_MAJOR, APA_MODVER_MINOR);
+#endif
 
 static iop_device_ops_t hddOps = {
     hddInit,
@@ -68,11 +76,13 @@ apa_device_t hddDevices[2] = {
     {0, 0, 0, 3},
     {0, 0, 0, 3}};
 
-extern u32 apaMaxOpen;
+extern int apaMaxOpen;
 extern hdd_file_slot_t *hddFileSlots;
 
 static int inputError(char *input);
 static int unlockDrive(s32 device);
+static void hddShutdownCb(void);
+static int hddInitError(void);
 
 int hddCheckPartitionMax(s32 device, u32 size)
 {
@@ -92,7 +102,7 @@ apa_cache_t *hddAddPartitionHere(s32 device, const apa_params_t *params, u32 *em
 
     // walk empty blocks in case can use one :)
     for (i = 0; i < 32; i++) {
-        if ((1 << i) >= params->size && emptyBlocks[i] != 0)
+        if ((u32)(1 << i) >= params->size && emptyBlocks[i] != 0)
             return apaInsertPartition(device, params, emptyBlocks[i], err);
     }
     clink_this = apaCacheGetHeader(device, sector, APA_IO_MODE_READ, err);
@@ -150,7 +160,7 @@ apa_cache_t *hddAddPartitionHere(s32 device, const apa_params_t *params, u32 *em
 static int inputError(char *input)
 {
     APA_PRINTF(APA_DRV_NAME ": Error: Usage: %s [-o <apaMaxOpen>] [-n <maxcache>]\n", input);
-    return 1;
+    return MODULE_NO_RESIDENT_END;
 }
 
 static void printStartup(void)
@@ -170,7 +180,7 @@ static int unlockDrive(s32 device)
 
 int _start(int argc, char **argv)
 {
-    int i;
+    int i, ret;
     char *input;
     int cacheSize = 3;
     apa_ps2time_t tm;
@@ -209,14 +219,23 @@ int _start(int argc, char **argv)
         argv++;
     }
 
-    APA_PRINTF(APA_DRV_NAME ": max open = %ld, %d buffers\n", apaMaxOpen, cacheSize);
-    apaGetTime(&tm);
+    APA_PRINTF(APA_DRV_NAME ": max open = %d, %d buffers\n", apaMaxOpen, cacheSize);
+    if (dev9RegisterShutdownCb(0, &hddShutdownCb) != 0) {
+        APA_PRINTF(APA_DRV_NAME ": error: dev9 may not be resident.\n");
+        return hddInitError();
+    }
+
+    if (apaGetTime(&tm) != 0) {
+        APA_PRINTF(APA_DRV_NAME ": error: could not get date.\n");
+        return hddInitError();
+    }
+
     APA_PRINTF(APA_DRV_NAME ": %02d:%02d:%02d %02d/%02d/%d\n",
                tm.hour, tm.min, tm.sec, tm.month, tm.day, tm.year);
     for (i = 0; i < 2; i++) {
         if (!(hddInfo = ata_get_devinfo(i))) {
             APA_PRINTF(APA_DRV_NAME ": Error: ata initialization failed.\n");
-            return 0;
+            return hddInitError();
         }
         if (hddInfo->exists != 0 && hddInfo->has_packet == 0) {
             hddDevices[i].status--;
@@ -229,14 +248,25 @@ int _start(int argc, char **argv)
         }
     }
     hddFileSlots = apaAllocMem(apaMaxOpen * sizeof(hdd_file_slot_t));
-    if (hddFileSlots)
-        memset(hddFileSlots, 0, apaMaxOpen * sizeof(hdd_file_slot_t));
+    ret = (hddFileSlots == NULL) ? -ENOMEM : 0;
+    if (ret != 0) {
+        APA_PRINTF(APA_DRV_NAME ": error: file descriptor initialization failed.\n");
+        return hddInitError();
+    }
 
-    apaCacheInit(cacheSize);
+    memset(hddFileSlots, 0, apaMaxOpen * sizeof(hdd_file_slot_t));
+
+    if (apaCacheInit(cacheSize) != 0) {
+        APA_PRINTF(APA_DRV_NAME ": error: cache buffer initialization failed.\n");
+        return hddInitError();
+    }
+
     for (i = 0; i < 2; i++) {
         if (hddDevices[i].status < 2) {
-            if (apaJournalRestore(i) != 0)
-                return 1;
+            if (apaJournalRestore(i) != 0) {
+                APA_PRINTF(APA_DRV_NAME ": error: log check failed.\n");
+                return hddInitError();
+            }
             if (apaGetFormat(i, &hddDevices[i].format))
                 hddDevices[i].status--;
             APA_PRINTF(APA_DRV_NAME ": drive status %d, format version %08x\n",
@@ -245,8 +275,30 @@ int _start(int argc, char **argv)
     }
     DelDrv("hdd");
     if (AddDrv(&hddFioDev) == 0) {
-        APA_PRINTF(APA_DRV_NAME ": driver start.\n");
+#ifdef APA_OSD_VER
+        APA_PRINTF(APA_DRV_NAME ": version %04x driver start. This is OSD version!\n", IRX_VER(APA_MODVER_MAJOR, APA_MODVER_MINOR));
+#else
+        APA_PRINTF(APA_DRV_NAME ": version %04x driver start.\n", IRX_VER(APA_MODVER_MAJOR, APA_MODVER_MINOR));
+#endif
         return MODULE_RESIDENT_END;
+    } else {
+        APA_PRINTF(APA_DRV_NAME ": error: add device failed.\n");
+        return hddInitError();
     }
+}
+
+static void hddShutdownCb(void)
+{
+    int i;
+
+    for (i = 0; i < 2; i++) {
+        if (hddDevices[i].status == 0)
+            ata_device_smart_save_attr(i);
+    }
+}
+
+static int hddInitError(void)
+{
+    dev9RegisterShutdownCb(0, NULL);
     return MODULE_NO_RESIDENT_END;
 }

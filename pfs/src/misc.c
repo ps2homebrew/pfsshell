@@ -21,7 +21,11 @@
 #include <cdvdman.h>
 #else
 #include <string.h>
-#include <stdlib.h>
+#ifdef __APPLE__
+#include <malloc/malloc.h>
+#else
+#include <malloc.h>
+#endif
 #include <time.h>
 #endif
 #include <ctype.h>

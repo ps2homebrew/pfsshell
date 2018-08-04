@@ -1,7 +1,7 @@
 include ../Defs.mak
 
 BINARY ?= libfakeps2sdk.a
-SOURCES += atad.c dbg.c
+SOURCES += atad.c
 OBJECTS += $(SOURCES:.c=.o)
 
 all: $(BINARY)

@@ -35,6 +35,12 @@ extern pfs_file_slot_t *pfsFileSlots;
 extern u32 pfsBlockSize;
 #endif
 
+enum PFS_AENTRY_MODE {
+    PFS_AENTRY_MODE_LOOKUP = 0,
+    PFS_AENTRY_MODE_ADD,
+    PFS_AENTRY_MODE_DELETE
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 //	Function declarations
 
@@ -47,7 +53,7 @@ static int ioctl2Attr(pfs_cache_t *clink, int cmd, void *arg, void *outbuf, u32 
 static pfs_aentry_t *getAentry(pfs_cache_t *clink, char *key, char *value, int mode);
 static int ioctl2AttrAdd(pfs_cache_t *clink, pfs_ioctl2attr_t *attr);
 static int ioctl2AttrDelete(pfs_cache_t *clink, void *arg);
-static int ioctl2AttrLoopUp(pfs_cache_t *clink, char *key, char *value);
+static int ioctl2AttrLookUp(pfs_cache_t *clink, char *key, char *value);
 static int ioctl2AttrRead(pfs_cache_t *clink, pfs_ioctl2attr_t *attr, u32 *unkbuf);
 
 int pfsFioIoctl(iop_file_t *f, int cmd, void *param)
@@ -82,14 +88,6 @@ int pfsFioDevctl(iop_file_t *f, const char *name, int cmd, void *arg, size_t arg
 
         case PDIOC_GETFSCKSTAT:
             rv = devctlFsckStat(pfsMount, PFS_MODE_CHECK_FLAG);
-            break;
-
-        case PDIOC_SETUID:
-            pfsMount->uid = *(u16 *)(arg);
-            break;
-
-        case PDIOC_SETGID:
-            pfsMount->gid = *(u16 *)(arg);
             break;
 
         case PDIOC_SHOWBITMAP:
@@ -190,7 +188,7 @@ static int ioctl2Attr(pfs_cache_t *clink, int cmd, void *arg, void *outbuf, u32 
             break;
 
         case PIOCATTRLOOKUP:
-            rv = ioctl2AttrLoopUp(flink, arg, outbuf);
+            rv = ioctl2AttrLookUp(flink, arg, outbuf);
             break;
 
         case PIOCATTRREAD:
@@ -230,7 +228,7 @@ static int devctlFsckStat(pfs_mount_t *pfsMount, int mode)
 }
 
 static pfs_aentry_t *getAentry(pfs_cache_t *clink, char *key, char *value, int mode)
-{ // mode 0=lookup, 1=add, 2=delete
+{
     int kLen, fullsize;
     pfs_aentry_t *aentry = clink->u.aentry;
     pfs_aentry_t *aentryLast = NULL;
@@ -238,24 +236,24 @@ static pfs_aentry_t *getAentry(pfs_cache_t *clink, char *key, char *value, int m
 
     kLen = strlen(key);
     fullsize = (kLen + strlen(value) + 7) & ~3;
-    for (end = (pfs_aentry_t *)((u8 *)aentry + 1024); end < aentry; aentry = (pfs_aentry_t *)((u8 *)aentry + aentry->aLen)) {
+    for (end = (pfs_aentry_t *)((u8 *)aentry + 1024); aentry < end; aentry = (pfs_aentry_t *)((u8 *)aentry + aentry->aLen)) { //Other than critical errors, do nothing about the filesystem errors.
         if (aentry->aLen & 3)
-            PFS_PRINTF(PFS_DRV_NAME " Error: attrib-entry allocated length/4 != 0\n");
+            PFS_PRINTF(PFS_DRV_NAME " Error: aentry allocated length/4 != 0\n");
         if (aentry->aLen < ((aentry->kLen + aentry->vLen + 7) & ~3)) {
-            PFS_PRINTF(PFS_DRV_NAME " Panic: attrib-entry is too small\n");
+            PFS_PRINTF(PFS_DRV_NAME " Panic: aentry is too small\n");
             return NULL;
         }
         if (end < (pfs_aentry_t *)((u8 *)aentry + aentry->aLen))
-            PFS_PRINTF(PFS_DRV_NAME " Error: attrib-entry too big\n");
+            PFS_PRINTF(PFS_DRV_NAME " Error: aentry too big\n");
 
         switch (mode) {
-            case 0: // lookup
+            case PFS_AENTRY_MODE_LOOKUP:
                 if (kLen == aentry->kLen)
                     if (memcmp(key, aentry->str, kLen) == 0)
                         return aentry;
                 break;
 
-            case 1: // add
+            case PFS_AENTRY_MODE_ADD:
                 if (aentry->kLen == 0) {
                     if (aentry->aLen >= fullsize)
                         return aentry;
@@ -264,7 +262,8 @@ static pfs_aentry_t *getAentry(pfs_cache_t *clink, char *key, char *value, int m
                     continue;
                 return aentry;
 
-            default: // delete
+            case PFS_AENTRY_MODE_DELETE:
+            default:
                 if (kLen == aentry->kLen) {
                     if (memcmp(key, aentry->str, kLen) == 0) {
                         if (aentryLast != NULL) {
@@ -293,21 +292,21 @@ static int ioctl2AttrAdd(pfs_cache_t *clink, pfs_ioctl2attr_t *attr)
     // input check
     kLen = strlen(attr->key);
     vLen = strlen(attr->value);
-    if (kLen >= 256 || vLen >= 256) // max size safe e check
+    if (kLen >= PFS_AENTRY_KEY_MAX || vLen >= PFS_AENTRY_VALUE_MAX) // max size bounds check
         return -EINVAL;
 
     if (kLen == 0 || vLen == 0) // no input check
         return -EINVAL;
 
-    if (getAentry(clink, attr->key, NULL, 0))
+    if (getAentry(clink, attr->key, NULL, PFS_AENTRY_MODE_LOOKUP))
         return -EEXIST;
-    if (!(aentry = getAentry(clink, attr->key, attr->value, 1)))
+    if ((aentry = getAentry(clink, attr->key, attr->value, PFS_AENTRY_MODE_ADD)) == NULL)
         return -ENOSPC;
 
     if (aentry->kLen == 0)
         tmp = aentry->aLen;
     else
-        tmp = aentry->aLen - ((aentry->kLen + (aentry->vLen + 7)) & ~3);
+        tmp = aentry->aLen - ((aentry->kLen + (aentry->vLen + 7)) & 0x3FC); //The only case that uses 0x3FC within the whole PFS driver.
 
     aentry->aLen -= tmp;
     aentry = (pfs_aentry_t *)((u8 *)aentry + aentry->aLen);
@@ -325,17 +324,17 @@ static int ioctl2AttrDelete(pfs_cache_t *clink, void *arg)
 {
     pfs_aentry_t *aentry;
 
-    if ((aentry = getAentry(clink, arg, 0, 2)) == NULL)
+    if ((aentry = getAentry(clink, arg, NULL, PFS_AENTRY_MODE_DELETE)) == NULL)
         return -ENOENT;
     clink->flags |= PFS_CACHE_FLAG_DIRTY;
     return 0;
 }
 
-static int ioctl2AttrLoopUp(pfs_cache_t *clink, char *key, char *value)
+static int ioctl2AttrLookUp(pfs_cache_t *clink, char *key, char *value)
 {
     pfs_aentry_t *aentry;
 
-    if ((aentry = getAentry(clink, key, 0, 0))) {
+    if ((aentry = getAentry(clink, key, NULL, PFS_AENTRY_MODE_LOOKUP)) != NULL) {
         memcpy(value, &aentry->str[aentry->kLen], aentry->vLen);
         value[aentry->vLen] = 0;
         return aentry->vLen;

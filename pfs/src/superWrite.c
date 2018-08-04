@@ -10,12 +10,12 @@
 # PFS superblock (write) manipulation routines
 */
 
-#include <sysclib.h>
 #include <errno.h>
 #include <stdio.h>
 #ifdef _IOP
 #include <sysclib.h>
 #else
+#include <sysclib.h>
 #include <string.h>
 #endif
 #include <hdd-ioctl.h>
@@ -224,8 +224,6 @@ int pfsMountSuperBlock(pfs_mount_t *pfsMount)
     memcpy(&pfsMount->log, &superblock->log, sizeof(pfs_blockinfo_t));
     memcpy(&pfsMount->current_dir, &superblock->root, sizeof(pfs_blockinfo_t));
     pfsMount->total_zones = 0;
-    pfsMount->uid = 0;
-    pfsMount->gid = 0;
 
     // Do a journal restore (in case of un-clean unmount)
     pfsJournalRestore(pfsMount);

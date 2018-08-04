@@ -5,7 +5,6 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
-#include "dbg.h"
 
 #ifdef __APPLE__
 #include <sys/disk.h>
@@ -44,29 +43,29 @@ void init(void)
 #else
                                         0
 #endif
-                  );
+    );
     if (handle != -1) {
 #ifdef __APPLE__
         u64 size = 0, sector_count = 0;
         u32 sector_size = 0;
-        if ( ioctl(handle, DKIOCGETBLOCKCOUNT, &sector_count) == 0 ) {
+        if (ioctl(handle, DKIOCGETBLOCKCOUNT, &sector_count) == 0) {
             ioctl(handle, DKIOCGETBLOCKSIZE, &sector_size);
-            if ( sector_size != 512 )
+            if (sector_size != 512)
                 size = ((sector_count * sector_size) - 511) / 512;
             else
                 size = sector_count;
-            if ( (int64_t)size >= 0 )
+            if ((int64_t)size >= 0)
                 hdd_length = size;
             else
                 perror(atad_device_path), exit(1);
-        } else if ( errno == ENOTTY ) {
+        } else if (errno == ENOTTY) {
             /* Not a device. Fall back to lseek */
 #endif
-        off_t size = lseek(handle, 0, SEEK_END);
-        if (size != (off_t)-1)
-            hdd_length = (size - 511) / 512;
-        else
-            perror(atad_device_path), exit(1);
+            off_t size = lseek(handle, 0, SEEK_END);
+            if (size != (off_t)-1)
+                hdd_length = (size - 511) / 512;
+            else
+                perror(atad_device_path), exit(1);
 #ifdef __APPLE__
         }
 #endif
@@ -100,13 +99,13 @@ int ata_device_sector_io(int device, void *buf, u32 lba, u32 nsectors, int dir)
         init();
 
     if (device != 0) {
-        dbg_printf("atadDmaTransfer: invalid device %d\n", device);
+        printf("atadDmaTransfer: invalid device %d\n", device);
         return (-1);
     }
 
     off_t pos = lseek(handle, (off_t)lba * 512, SEEK_SET);
     if (pos == (off_t)-1) {
-        dbg_printf("lseek: %s: %s\n", atad_device_path, strerror(errno));
+        printf("lseek: %s: %s\n", atad_device_path, strerror(errno));
         return (-1);
     }
 
@@ -118,7 +117,7 @@ int ata_device_sector_io(int device, void *buf, u32 lba, u32 nsectors, int dir)
     if (len == nsectors * 512)
         return (0); /* success */
     else {
-        dbg_printf("read/write: %s: %s\n", atad_device_path, strerror(errno));
+        printf("read/write: %s: %s\n", atad_device_path, strerror(errno));
         return (-1);
     }
 }

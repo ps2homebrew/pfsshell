@@ -9,7 +9,7 @@
 #define APA_FORMAT_LOCK_MBR 1
 
 #define APA_MODVER_MAJOR 2
-#define APA_MODVER_MINOR 1
+#define APA_MODVER_MINOR 5
 
 #define _start apa_start
 
