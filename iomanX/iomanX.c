@@ -567,7 +567,7 @@ int umount(const char *fsname)
     return file.device->ops->umount(&file, filename);
 }
 
-s64 lseek64(int fd, long long offset, int whence)
+s64 lseek64(int fd, s64 offset, int whence)
 {
     iop_file_t *f = get_file(fd);
 
