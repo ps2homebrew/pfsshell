@@ -48,7 +48,7 @@ iop_device_t **GetDeviceList(void)
     return (dev_list);
 }
 
-int _start(int argc, char **argv)
+int __start(int argc, char **argv)
 {
     if (RegisterLibraryEntries(&_exp_iomanx) != 0) {
         return MODULE_NO_RESIDENT_END;
@@ -567,7 +567,7 @@ int umount(const char *fsname)
     return file.device->ops->umount(&file, filename);
 }
 
-long long lseek64(int fd, long long offset, int whence)
+s64 lseek64(int fd, long long offset, int whence)
 {
     iop_file_t *f = get_file(fd);
 
