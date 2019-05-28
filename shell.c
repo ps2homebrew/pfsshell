@@ -9,6 +9,10 @@
 #include "iomanX_port.h"
 #include "hl.h"
 
+#ifdef __WIN32
+#define NEED_GETLINE
+#endif
+
 typedef struct
 {
     int setup;
