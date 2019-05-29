@@ -6,8 +6,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef __APPLE__
-#include <sys/disk.h>
+#if 1 /* enable 64-bit file I/O */
+#  define lseek lseek64
+#  define off_t off64_t
 #endif
 
 typedef uint32_t u32;
@@ -29,6 +30,98 @@ static int handle = -1;
 
 static u32 hdd_length = 0; /* in sectors */
 char atad_device_path[256] = {"hdd.img"};
+
+/*
+*   Manually check sector size.
+*/
+
+u32 getHddSectorSize(int filedes)
+{
+	u32 sector_size = 512;
+	
+	char *buffer = malloc(sector_size * sizeof(*buffer));
+	
+	if (read(filedes, buffer, sector_size) == sector_size)
+		return sector_size;
+	
+	free(buffer);
+	
+	sector_size = 4096;
+	
+	errno = 0;
+	
+	if (lseek(filedes, 0, SEEK_SET) == (off_t) - 1)
+		return -1;
+	
+	buffer = malloc(sector_size * sizeof(*buffer));
+	
+	if (read(filedes, buffer, sector_size) != sector_size)
+		return -1;
+	
+	free(buffer);
+	
+	if (lseek(filedes, 0, SEEK_SET) == (off_t) - 1)
+		return -1;
+	
+	errno = 0;
+	
+	return sector_size;
+}
+
+/*
+*   Manually get the sector count
+*   through a combination of read and seek.
+*   Using 2TB (0x20000000000) as base maximum offset.
+*/
+
+off_t getHddSectorCount(int filedes, u32 block_size)
+{	
+	off_t sector_count = 0;
+	off_t offset = (off_t) 0x20000000000;
+	off_t sector_count_per_offset = offset / block_size;
+	off_t seekOffset = offset - block_size;
+	
+	char *buffer = malloc(block_size * sizeof(*buffer));
+	
+	while (offset >= block_size)
+	{
+		if (lseek(filedes, seekOffset, SEEK_CUR) == (off_t) - 1)
+			return -1;
+		
+		off_t readOffset;
+		while ((readOffset = read(filedes, buffer, block_size)) == block_size)
+		{
+			sector_count += sector_count_per_offset;
+			if (lseek(filedes, seekOffset, SEEK_CUR) == (off_t) -1)
+				return -1;
+		}
+		
+		if (sector_count == 0)
+		{
+			if (lseek(filedes, 0, SEEK_SET) == (off_t) - 1)
+				return -1;
+		}
+		else
+		{
+			if (lseek(filedes, -seekOffset, SEEK_CUR) == (off_t) - 1)
+				return -1;
+		}
+		
+		offset /= 2;
+		sector_count_per_offset = offset / block_size;
+		seekOffset = offset - block_size;
+	}
+	
+	free(buffer);
+	
+	if (lseek(filedes, 0, SEEK_SET) == (off_t) - 1)
+		return -1;
+	
+	errno = 0;
+	
+	return sector_count;
+}
+
 void atad_close(void)
 {
     if (handle != -1)
@@ -45,30 +138,13 @@ void init(void)
 #endif
     );
     if (handle != -1) {
-#ifdef __APPLE__
-        u64 size = 0, sector_count = 0;
-        u32 sector_size = 0;
-        if (ioctl(handle, DKIOCGETBLOCKCOUNT, &sector_count) == 0) {
-            ioctl(handle, DKIOCGETBLOCKSIZE, &sector_size);
-            if (sector_size != 512)
-                size = ((sector_count * sector_size) - 511) / 512;
-            else
-                size = sector_count;
-            if ((int64_t)size >= 0)
-                hdd_length = size;
-            else
-                perror(atad_device_path), exit(1);
-        } else if (errno == ENOTTY) {
-            /* Not a device. Fall back to lseek */
-#endif
-            off_t size = lseek(handle, 0, SEEK_END);
-            if (size != (off_t)-1)
-                hdd_length = (size - 511) / 512;
-            else
-                perror(atad_device_path), exit(1);
-#ifdef __APPLE__
-        }
-#endif
+        u32 sector_size = getHddSectorSize(handle);
+        off_t sector_count = getHddSectorCount(handle, sector_size);
+		
+		if (sector_size == -1 || sector_count == -1)
+			perror(atad_device_path), exit(1);
+		
+		hdd_length = sector_count;
     } else
         perror(atad_device_path), exit(1);
 }
