@@ -1,3 +1,5 @@
+#define _FILE_OFFSET_BITS 64
+
 #include <fcntl.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -5,11 +7,6 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
-
-#if 1 /* enable 64-bit file I/O */
-#  define lseek lseek64
-#  define off_t off64_t
-#endif
 
 typedef uint32_t u32;
 typedef uint64_t u64;
@@ -32,50 +29,14 @@ static u32 hdd_length = 0; /* in sectors */
 char atad_device_path[256] = {"hdd.img"};
 
 /*
-*   Manually check sector size.
-*/
-
-u32 getHddSectorSize(int filedes)
-{
-	u32 sector_size = 512;
-	
-	char *buffer = malloc(sector_size * sizeof(*buffer));
-	
-	if (read(filedes, buffer, sector_size) == sector_size)
-		return sector_size;
-	
-	free(buffer);
-	
-	sector_size = 4096;
-	
-	errno = 0;
-	
-	if (lseek(filedes, 0, SEEK_SET) == (off_t) - 1)
-		return -1;
-	
-	buffer = malloc(sector_size * sizeof(*buffer));
-	
-	if (read(filedes, buffer, sector_size) != sector_size)
-		return -1;
-	
-	free(buffer);
-	
-	if (lseek(filedes, 0, SEEK_SET) == (off_t) - 1)
-		return -1;
-	
-	errno = 0;
-	
-	return sector_size;
-}
-
-/*
 *   Manually get the sector count
 *   through a combination of read and seek.
 *   Using 2TB (0x20000000000) as base maximum offset.
 */
 
-off_t getHddSectorCount(int filedes, u32 block_size)
+off_t getHddSectorCount(int filedes)
 {	
+	const off_t block_size = 512;
 	off_t sector_count = 0;
 	off_t offset = (off_t) 0x20000000000;
 	off_t sector_count_per_offset = offset / block_size;
@@ -138,10 +99,9 @@ void init(void)
 #endif
     );
     if (handle != -1) {
-        u32 sector_size = getHddSectorSize(handle);
-        off_t sector_count = getHddSectorCount(handle, sector_size);
+        off_t sector_count = getHddSectorCount(handle);
 		
-		if (sector_size == -1 || sector_count == -1)
+		if (sector_count == -1)
 			perror(atad_device_path), exit(1);
 		
 		hdd_length = sector_count;
