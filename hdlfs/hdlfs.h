@@ -1,6 +1,6 @@
 #pragma once
 
-#define _start hdlfs_start
+#define __start hdlfs_start
 
 #define HDL_FS_MAGIC 0x1337
 #define APA_FLAG_SUB 0x0001

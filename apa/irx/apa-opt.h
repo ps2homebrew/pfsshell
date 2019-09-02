@@ -11,6 +11,6 @@
 #define APA_MODVER_MAJOR 2
 #define APA_MODVER_MINOR 5
 
-#define _start apa_start
+#define __start apa_start
 
 #endif
