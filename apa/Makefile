@@ -18,4 +18,4 @@ clean:
 	rm -f $(OBJECTS) $(BINARY)
 
 $(BINARY): $(OBJECTS)
-	$(AR) rcs $@ $^
+	libtool -static -o $@ $^
