@@ -549,7 +549,7 @@ static iop_device_t hdlfs_dev = {
 };
 
 /* Entry point */
-int _start(int argc, char **argv)
+int __start(int argc, char **argv)
 {
     DelDrv(hdlfs_dev_name);
     AddDrv(&hdlfs_dev);

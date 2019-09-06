@@ -10,6 +10,6 @@
 #define PFS_IOCTL2_INC_CHECKSUM 1
 #define PFS_STAT_RETURN_INODE_LBA 1
 
-#define _start pfs_start
+#define __start pfs_start
 
 #endif
