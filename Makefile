@@ -1,9 +1,9 @@
 include ./Defs.mak
 
 
-# ifeq ($(MINGW32),1)
-# LDFLAGS += -static
-# endif
+ifeq ($(MINGW32),1)
+LDFLAGS += -static
+endif
 
 SOURCES += startup.c hl.c util.c shell.c
 OBJECTS += $(SOURCES:.c=.o)
