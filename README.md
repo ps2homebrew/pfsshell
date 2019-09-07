@@ -1,15 +1,65 @@
+# PFS (PlayStation File System) shell for POSIX-based systems
 
-PFS (PlayStation File System) tool for Linux/Mac/Unix
-=====================================================
+This tool allows you to browse and transfer files to and from PFS filesystems 
+using the command line.  
+This tool is useful for transfering configuration and media files used by 
+programs such as Open PS2 Loader and SMS.  
 
-Information
-===========
+## Quick start
 
-This is a tool to allow you to browse and transfer files to/from PFS filesystems.
+Binaries for Win32 are availble here: https://github.com/uyjulian/pfsshell/releases  
+To start the program, simply provide the path to it on the command line: 
+```
+/path/to/pfsshell
+```
+You will get a prompt similar to the following:
+```
+> 
+```
+To get a list of commands, type in the following:
+```
+> help
+```
+To select a device which can be a disk image or block device, type in the following:
+```
+> device /path/to/device
+```
+Block devices can be used on Windows by using the UNC path.  
+Once a device is selected, the prompt will change to the following:
+```
+# 
+```
+To mount a partition (for example, the `+OPL` partition), type in the following:
+```
+# mount +OPL
+```
+The prompt will change to the following:
+```
++OPL:/#
+```
+To get a list of files, type in the following:
+```
++OPL:/# ls
+```
+Once you are finished looking around in the partition, type in the following:
+```
++OPL:/# umount
+```
+Once you are finished with the program, type in the following:
+```
+# exit
+```
 
-Original source code
-====================
+## Original project
 
+The original project was created by Wizard of Oz. More information about the 
+original project can be found at the following location:
 http://web.archive.org/web/20061220090822/http://hdldump.ps2-scene.org/
 
-~uyjulian
+## License
+
+This project as a whole is licensed under the GNU General Public License GPL 
+version 2. Please read the `COPYING` file for more information.  
+The APA, PFS, and iomanX libraries are licensed under the The Academic Free 
+License version 2. Please read the `COPYING.AFLv2` file for more infomation.  
+
