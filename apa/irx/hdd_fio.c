@@ -105,7 +105,8 @@ static int fioGetInput(const char *arg, apa_params_t *params)
         {"PFS", APA_TYPE_PFS},
         {"CFS", APA_TYPE_CFS},
         {"EXT2", APA_TYPE_EXT2},
-        {"EXT2SWAP", APA_TYPE_EXT2SWAP}};
+        {"EXT2SWAP", APA_TYPE_EXT2SWAP},
+        {"HDL", APA_TYPE_HDL}};
 
     if (params == NULL)
         return -EINVAL;
@@ -151,14 +152,14 @@ static int fioGetInput(const char *arg, apa_params_t *params)
     if ((rv = fioInputBreaker(&arg, argBuf, sizeof(argBuf))) != 0)
         return rv;
 
-    for (i = 0; i < 4; i++) {
+    for (i = 0; i < 5; i++) {
         if (!strcmp(argBuf, fsTypes[i].desc)) {
             params->type = fsTypes[i].type;
             break;
         }
     }
 
-    if (i == 4) {
+    if (i == 5) {
         printf("hdd: error: Invalid fstype, %s.\n", argBuf);
         return -EINVAL;
     }
@@ -837,6 +838,11 @@ int hddIoctl2(iop_file_t *f, int req, void *argp, size_t arglen,
             }
             break;
 
+        // Special HDD.IRX IOCTL2 command for supporting HDLFS
+        case HIOCGETPARTSTART:
+            rv = fileSlot->parts[*(u32 *)argp].start;
+            break;
+
         default:
             rv = -EINVAL;
             break;
@@ -911,7 +917,8 @@ int hddDevctl(iop_file_t *f, const char *devname, int cmd, void *arg,
     switch (cmd) {
         // Command set 1 ('H')
         case HDIOC_DEV9OFF:
-            ata_device_smart_save_attr(f->unit);
+            // Early versions called ata_device_smart_save_attr() here, when their old
+            // dev9 versions did not support the pre-shutdown callback.
             dev9Shutdown();
             break;
 

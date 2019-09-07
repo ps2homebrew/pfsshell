@@ -35,52 +35,47 @@ char atad_device_path[256] = {"hdd.img"};
 */
 
 off_t getHddSectorCount(int filedes)
-{	
-	const off_t block_size = 512;
-	off_t sector_count = 0;
-	off_t offset = (off_t) 0x20000000000;
-	off_t sector_count_per_offset = offset / block_size;
-	off_t seekOffset = offset - block_size;
-	
-	char *buffer = malloc(block_size * sizeof(*buffer));
-	
-	while (offset >= block_size)
-	{
-		if (lseek(filedes, seekOffset, SEEK_CUR) == (off_t) - 1)
-			return -1;
-		
-		off_t readOffset;
-		while ((readOffset = read(filedes, buffer, block_size)) == block_size)
-		{
-			sector_count += sector_count_per_offset;
-			if (lseek(filedes, seekOffset, SEEK_CUR) == (off_t) -1)
-				return -1;
-		}
-		
-		if (sector_count == 0)
-		{
-			if (lseek(filedes, 0, SEEK_SET) == (off_t) - 1)
-				return -1;
-		}
-		else
-		{
-			if (lseek(filedes, -seekOffset, SEEK_CUR) == (off_t) - 1)
-				return -1;
-		}
-		
-		offset /= 2;
-		sector_count_per_offset = offset / block_size;
-		seekOffset = offset - block_size;
-	}
-	
-	free(buffer);
-	
-	if (lseek(filedes, 0, SEEK_SET) == (off_t) - 1)
-		return -1;
-	
-	errno = 0;
-	
-	return sector_count;
+{
+    const off_t block_size = 512;
+    off_t sector_count = 0;
+    off_t offset = (off_t)0x20000000000;
+    off_t sector_count_per_offset = offset / block_size;
+    off_t seekOffset = offset - block_size;
+
+    char *buffer = malloc(block_size * sizeof(*buffer));
+
+    while (offset >= block_size) {
+        if (lseek(filedes, seekOffset, SEEK_CUR) == (off_t)-1)
+            return -1;
+
+        off_t readOffset;
+        while ((readOffset = read(filedes, buffer, block_size)) == block_size) {
+            sector_count += sector_count_per_offset;
+            if (lseek(filedes, seekOffset, SEEK_CUR) == (off_t)-1)
+                return -1;
+        }
+
+        if (sector_count == 0) {
+            if (lseek(filedes, 0, SEEK_SET) == (off_t)-1)
+                return -1;
+        } else {
+            if (lseek(filedes, -seekOffset, SEEK_CUR) == (off_t)-1)
+                return -1;
+        }
+
+        offset /= 2;
+        sector_count_per_offset = offset / block_size;
+        seekOffset = offset - block_size;
+    }
+
+    free(buffer);
+
+    if (lseek(filedes, 0, SEEK_SET) == (off_t)-1)
+        return -1;
+
+    errno = 0;
+
+    return sector_count;
 }
 
 void atad_close(void)
@@ -100,11 +95,11 @@ void init(void)
     );
     if (handle != -1) {
         off_t sector_count = getHddSectorCount(handle);
-		
-		if (sector_count == -1)
-			perror(atad_device_path), exit(1);
-		
-		hdd_length = sector_count;
+
+        if (sector_count == -1)
+            perror(atad_device_path), exit(1);
+
+        hdd_length = sector_count;
     } else
         perror(atad_device_path), exit(1);
 }

@@ -7,10 +7,8 @@
 #include <thsemap.h>
 #include <stdio.h>
 #include <sysclib.h>
-//#include <sysmem.h>
 #include <types.h>
 
-//#include <sys/stat.h>
 #include <hdd-ioctl.h>
 
 #include "hdlfs.h"
@@ -28,7 +26,9 @@ IRX_ID(MODNAME, 0x01, 0x02);
 
 /* APA IOCTL2 commands */
 // Special HDD.IRX IOCTL2 command for supporting HDLFS
-//#define HIOCGETPARTSTART		0x00006836	// Get the sector number of the first sector of the partition.
+#if 0
+#define HIOCGETPARTSTART 0x00006836 // Get the sector number of the first sector of the partition.
+#endif
 
 struct HDLFS_FileDescriptor
 {
