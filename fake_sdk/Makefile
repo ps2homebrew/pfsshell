@@ -10,4 +10,4 @@ clean:
 	rm -f $(OBJECTS) $(BINARY)
 
 $(BINARY): $(OBJECTS)
-	libtool -static -o $@ $^
+	$(GEN_STATIC) $@ $^
