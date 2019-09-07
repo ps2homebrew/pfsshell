@@ -24,5 +24,5 @@ CFLAGS += -O0 -g -Wall -Wno-unused-value -Wno-format
 CFLAGS2 += -I../fake_sdk/include
 
 %.o : %.c
-	@echo -e "\tCC  $<"
+	@printf '\t%s %s\n' CC $<
 	@$(CC) -c $(CFLAGS) -o $@ $<

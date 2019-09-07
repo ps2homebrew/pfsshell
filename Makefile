@@ -43,5 +43,5 @@ hdlfs/libhdlfs.a: hdlfs iomanX/libiomanX.a
 	$(MAKE) -C $<
 
 $(BINARY): $(OBJECTS) iomanX/libiomanX.a apa/libapa.a pfs/libpfs.a hdlfs/libhdlfs.a fake_sdk/libfakeps2sdk.a
-	@echo -e "\tLNK $@"
+	@printf '\t%s %s\n' LNK $@
 	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(LDLIBS) $^

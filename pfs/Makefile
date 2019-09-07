@@ -17,4 +17,5 @@ clean:
 	rm -f $(OBJECTS) $(BINARY)
 
 $(BINARY): $(OBJECTS)
+	@printf '\t%s %s\n' GEN_STATIC $@
 	$(GEN_STATIC) $@ $^
