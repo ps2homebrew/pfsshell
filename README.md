@@ -50,6 +50,11 @@ Once you are finished with the program, type in the following:
 # exit
 ```
 
+## Building
+
+This project can be built by calling GNU Make. To build for Windows, install 
+the mingw-w64 environment, then call GNU Make with `MINGW32=1` set.
+
 ## Original project
 
 The original project was created by Wizard of Oz. More information about the 
