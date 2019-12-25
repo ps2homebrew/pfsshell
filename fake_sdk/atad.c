@@ -101,7 +101,7 @@ void init(void)
         perror(atad_device_path), exit(1);
     if (win_handle != INVALID_HANDLE_VALUE) 
     {
-        CloseHandle(atad_device_path);
+        CloseHandle(win_handle);
     }
 }
 
