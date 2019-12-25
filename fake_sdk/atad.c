@@ -1,3 +1,10 @@
+
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <winioctl.h>
+#endif
+
 #include <fcntl.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -38,6 +45,9 @@ void atad_close(void)
 
 void init(void)
 {
+#ifdef _WIN32
+    HANDLE win_handle = CreateFileA (atad_device_path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+#endif
     handle = open(atad_device_path, O_RDWR |
 #ifdef O_BINARY
                                         O_BINARY
@@ -62,16 +72,37 @@ void init(void)
         } else if (errno == ENOTTY) {
             /* Not a device. Fall back to lseek */
 #endif
+#ifdef _WIN32
+        DISK_GEOMETRY geo;
+        DWORD len = 0;
+        u64 size = 0, size_in_bytes = 0;
+        if (win_handle != INVALID_HANDLE_VALUE && DeviceIoControl (win_handle, IOCTL_DISK_GET_DRIVE_GEOMETRY, NULL, 0, &geo, sizeof (DISK_GEOMETRY), &len, NULL))
+        {
+            size_in_bytes = (geo.Cylinders.QuadPart * geo.TracksPerCylinder * geo.SectorsPerTrack * geo.BytesPerSector);
+            size = ((size_in_bytes) - 511) / 512;
+            if ((int64_t)size >= 0)
+                hdd_length = size;
+            else
+                perror(atad_device_path), exit(1);
+        } else {
+#endif
             off_t size = lseek(handle, 0, SEEK_END);
             if (size != (off_t)-1)
                 hdd_length = (size - 511) / 512;
             else
                 perror(atad_device_path), exit(1);
+#ifdef _WIN32
+        }
+#endif
 #ifdef __APPLE__
         }
 #endif
     } else
         perror(atad_device_path), exit(1);
+    if (win_handle != INVALID_HANDLE_VALUE) 
+    {
+        CloseHandle(atad_device_path);
+    }
 }
 
 ata_devinfo_t *ata_get_devinfo(int device)
