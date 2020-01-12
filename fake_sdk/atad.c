@@ -101,10 +101,12 @@ void init(void)
 #endif
     } else
         perror(atad_device_path), exit(1);
+#ifdef _WIN32
     if (win_handle != INVALID_HANDLE_VALUE) 
     {
         CloseHandle(win_handle);
     }
+#endif
 }
 
 ata_devinfo_t *ata_get_devinfo(int device)
