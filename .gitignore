@@ -5,3 +5,5 @@ pfsshell
 *.IMG
 *.exe
 *.7z
+build-mingw
+build

@@ -52,8 +52,8 @@ Once you are finished with the program, type in the following:
 
 ## Building
 
-This project can be built by calling GNU Make. To build for Windows, install 
-the mingw-w64 environment, then call GNU Make with `MINGW32=1` set.
+This project can be built by using the Meson build system. For more information
+about the system, please visit the following location: https://mesonbuild.com/
 
 ## Original project
 
