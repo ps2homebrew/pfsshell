@@ -1,4 +1,4 @@
-project('pfsshell', 'c', default_options: ['optimization=0', 'debug=true', 'warning_level=1'], version: 'v1.0.0')
+project('pfsshell', 'c', default_options: ['optimization=0', 'debug=true', 'warning_level=1'], version: 'v1.1.0')
 
 add_global_arguments(['-Wno-unused-value', '-Wno-format', '-Wno-unused-function', '-Wno-unused-variable'], language : 'c')
 
