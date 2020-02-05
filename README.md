@@ -41,6 +41,14 @@ To get a list of files, type in the following:
 ```
 +OPL:/# ls
 ```
+To transfer a file from the current directory of the PFS partition to the current directory of the process, type in the following:  
+```
++OPL:/# get example.txt
+```
+To transfer a file from the current directory of the process to the current directory of the PFS partition, type in the following:  
+```
++OPL:/# put example.txt
+```
 Once you are finished looking around in the partition, type in the following:
 ```
 +OPL:/# umount
