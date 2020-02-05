@@ -1,6 +1,6 @@
-project('pfsshell', 'c')
+project('pfsshell', 'c', default_options: ['optimization=0', 'debug=true', 'warning_level=1'])
 
-add_global_arguments(['-O0', '-g', '-Wall', '-Wno-unused-value', '-Wno-format'], language : 'c')
+add_global_arguments(['-Wno-unused-value', '-Wno-format'], language : 'c')
 
 cc = meson.get_compiler('c')
 host_system = host_machine.system()
