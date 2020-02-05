@@ -8,7 +8,7 @@ typedef struct
     int max;
 } iop_sema_t;
 
-#define CreateSema(x) 0
-#define DeleteSema(x) 0
-#define WaitSema(x) 0
-#define SignalSema(x) 0
+int CreateSema(iop_sema_t *sema);
+int DeleteSema(int semid);
+int WaitSema(int semid);
+int SignalSema(int semid);

@@ -4,7 +4,8 @@ libfakeps2sdk_inc = [
 	include_directories('include')
 ]
 libfakeps2sdk_src = [
-	'atad.c'
+	'atad.c',
+	'thsemap.c',
 ]
 libfakeps2sdk = static_library('fakeps2sdk', sources: libfakeps2sdk_src, include_directories: libfakeps2sdk_inc)
 
