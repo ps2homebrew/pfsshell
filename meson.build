@@ -30,9 +30,15 @@ pfsshell_cflags = []
 if host_system == 'windows' and cc.get_id() != 'msvc' and cc.get_id() != 'clang-cl'
 	pfsshell_cflags += ['-DNEED_GETLINE']
 endif
+if host_system == 'linux'
+	pfsshell_cflags += ['-pthread']
+endif
 pfsshell_ldflags = []
 if host_system == 'windows' and cc.get_id() != 'msvc' and cc.get_id() != 'clang-cl'
 	pfsshell_ldflags += ['-static']
+endif
+if host_system == 'linux'
+	pfsshell_ldflags += ['-lpthread']
 endif
 pfsshell_dependson = [
 	libfakeps2sdk_noinclude_dep,
