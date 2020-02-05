@@ -41,4 +41,4 @@ pfsshell_dependson = [
 	libiomanX_dep,
 	libhdlfs_dep,
 ]
-pfsshell = executable('pfsshell', sources: pfsshell_src, c_args: pfsshell_cflags, link_args: pfsshell_ldflags, dependencies: pfsshell_dependson)
+pfsshell = executable('pfsshell', sources: pfsshell_src, c_args: pfsshell_cflags, link_args: pfsshell_ldflags, dependencies: pfsshell_dependson, install: true)
