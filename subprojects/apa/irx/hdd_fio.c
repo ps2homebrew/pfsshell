@@ -403,8 +403,10 @@ static int apaRemove(s32 device, const char *id, const char *fpwd)
                 return -EBUSY;
         }
     }
+#if 0
     if (id[0] == '_' && id[1] == '_')
         return -EACCES;
+#endif
     if ((clink = apaFindPartition(device, id, &rv)) == NULL)
         return rv;
     if (apaPassCmp(clink->header->fpwd, fpwd)) {
