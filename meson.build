@@ -48,12 +48,13 @@ pfsshell_dependson = [
 	libhdlfs_dep,
 ]
 pfsshell = executable('pfsshell', sources: pfsshell_src, c_args: pfsshell_cflags, link_args: pfsshell_ldflags, dependencies: pfsshell_dependson, install: true)
+libps2hdd = shared_library('ps2hdd', sources: pfsshell_src, c_args: pfsshell_cflags, link_args: pfsshell_ldflags, dependencies: pfsshell_dependson, install: true)
 
 if host_system == 'windows' and cc.get_id() != 'msvc' and cc.get_id() != 'clang-cl'
 archive = custom_target(
     'archive',
     output: meson.project_name() + '-' + meson.project_version() + '-win32.7z',
-    input: [pfsshell, 'README.md', 'COPYING', 'COPYING.AFLv2'],
+    input: [pfsshell, libps2hdd, 'README.md', 'COPYING', 'COPYING.AFLv2'],
     build_by_default: true,
     command: [find_program('7z'), 'a', '@OUTPUT@', '@INPUT@']
 )
