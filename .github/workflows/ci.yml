@@ -26,8 +26,10 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
-      - run: sudo apt-get update
-      - run: sudo apt-get install build-essential
+      - name: Install build dependancies
+        run: |
+          sudo apt-get update
+          sudo apt-get install build-essential expect
       - uses: actions/setup-python@v1
         with:
           python-version: '3.x'
@@ -38,8 +40,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip
       - run: python -m pip install --upgrade meson ninja
-      - run: meson setup build/
-      - run: meson compile -C build
+
+      - name: Build pfsshell
+        run: |
+          meson setup build/
+          meson compile -C build
+
+      - name: Run Test
+        run: time ./run_test.tcl
+
       - uses: actions/upload-artifact@master
         with:
           name: pfsshell-ubuntu
