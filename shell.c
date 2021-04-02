@@ -497,7 +497,7 @@ static int do_help(context_t *ctx, int argc, char *argv[])
         "cd <dir_name> - change directory;\n"
         "get <file_name> - copy file from PS2 HDD to current dir;\n"
         "put <file_name> - copy file from current dir to PS2 HDD;\n"
-        "\tfile name must not contain a path;"
+        "\tfile name must not contain a path;\n"
         "rm <file_name> - delete a file;\n"
         "rename <curr_name> <new_name> - rename a file/dir.\n"
         "rmpart <part_name> - remove partition (destructive).\n"
