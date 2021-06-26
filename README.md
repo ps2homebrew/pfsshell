@@ -1,5 +1,7 @@
 # PFS (PlayStation File System) shell for POSIX-based systems
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/7d9958516528483cad56ed4b4aab5654)](https://app.codacy.com/gh/ps2homebrew/pfsshell?utm_source=github.com&utm_medium=referral&utm_content=ps2homebrew/pfsshell&utm_campaign=Badge_Grade_Settings)
+
 This tool allows you to browse and transfer files to and from PFS filesystems 
 using the command line.  
 This tool is useful for transfering configuration and media files used by 
