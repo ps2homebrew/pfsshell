@@ -100,7 +100,7 @@ int apaGetTime(apa_ps2time_t *tm)
     // Convert to JST
     rawtime += (-9 * 60 * 60);
 #ifdef _WIN32
-    gmtime_s(&rawtime, &timeinfo);
+    gmtime_s(&timeinfo, &rawtime);
 #else
     gmtime_r(&rawtime, &timeinfo);
 #endif
