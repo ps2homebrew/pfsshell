@@ -1,0 +1,7 @@
+
+option(
+	'enable_pfsfuse',
+	type: 'boolean',
+	value: false,
+	description: 'Enable building of pfsfuse executable. Requires FUSE to be installed'
+)

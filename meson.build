@@ -50,6 +50,33 @@ pfsshell_dependson = [
 pfsshell = executable('pfsshell', sources: pfsshell_src, c_args: pfsshell_cflags, link_args: pfsshell_ldflags, dependencies: pfsshell_dependson, install: true)
 libps2hdd = shared_library('ps2hdd', sources: pfsshell_src, c_args: pfsshell_cflags, link_args: pfsshell_ldflags, dependencies: pfsshell_dependson, install: true)
 
+if get_option('enable_pfsfuse') == true
+libfuse_dep = dependency('fuse')
+pfsfuse_src = [
+	'iomanx_adapter.c',
+]
+pfsfuse_cflags = []
+if host_system == 'linux'
+	pfsfuse_cflags += ['-pthread']
+endif
+pfsfuse_cflags += ['-D_FILE_OFFSET_BITS=64']
+pfsfuse_ldflags = []
+if host_system == 'windows' and cc.get_id() != 'msvc' and cc.get_id() != 'clang-cl'
+	pfsfuse_ldflags += ['-static']
+endif
+if host_system == 'linux'
+	pfsfuse_ldflags += ['-lpthread']
+endif
+pfsfuse_dependson = [
+	libfakeps2sdk_noinclude_dep,
+	libapa_dep,
+	libpfs_dep,
+	libiomanX_dep,
+	libfuse_dep,
+]
+pfsfuse = executable('pfsfuse', sources: pfsfuse_src, c_args: pfsfuse_cflags, link_args: pfsfuse_ldflags, dependencies: pfsfuse_dependson, install: true)
+endif
+
 if host_system == 'windows' and cc.get_id() != 'msvc' and cc.get_id() != 'clang-cl'
 archive = custom_target(
     'archive',
