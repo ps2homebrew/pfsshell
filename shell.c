@@ -171,8 +171,16 @@ static int do_device(context_t *ctx, int argc, char *argv[])
         exit(1);
     }
 
+    static const char *pfs_args[] =
+        {
+            "pfs.irx",
+            "-m", "1",
+            "-o", "1",
+            "-n", "10",
+            NULL};
+
     /* mandatory */
-    result = _init_pfs(0, NULL);
+    result = _init_pfs(7, (char **)pfs_args);
     if (result < 0) {
         fprintf(stderr, "(!) init_pfs: failed with %d (%s)\n", result,
                 strerror(-result));
