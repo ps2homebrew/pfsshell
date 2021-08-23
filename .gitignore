@@ -1,9 +1,39 @@
+#
+# NOTE! Please use 'git ls-files -i --exclude-standard -c'
+# command after changing this file, to see if there are
+# any tracked files which get ignored after the change.
+#
+# Normal rules
+#
+.*
 *.o
-.DS_Store
-pfsshell
 *.a
-*.IMG
+*.diff
+*.elf
+*.ELF
+*.erl
 *.exe
-*.7z
+*.irx
+*.map
+*.o
+*.patch
+*.rej
+*.s
+*.zip
+*.ZIP
+*.a
+
+#
+# files that we don't want to ignore
+#
+!.git*
+!.editorconfig
+!.clang-format
+
+#
+# Generated source files
+#
+*.IMG
+pfsshell
 build-mingw
 build
