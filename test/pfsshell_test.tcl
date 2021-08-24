@@ -14,7 +14,8 @@ proc init_process {} {
 	if { [file exists test.img] == 1} {
 		file delete test.img
 	}
-	exec mkfile -n 40g test.img
+	exec truncate -s 40G test.img
+
 	spawn ../build/pfsshell
 	match_max 100000
 	expect -exact "pfsshell for POSIX systems\r
@@ -110,6 +111,5 @@ run_cmd "rmpart" "ls" "-exact" "
 
 run_cmd "exit" "exit" eof ""
 file delete pfsshell.md
-
 
 #exec rm test.img
