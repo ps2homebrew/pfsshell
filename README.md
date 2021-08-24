@@ -38,9 +38,11 @@ The prompt will change to the following:
 ```
 +OPL:/#
 ```
-To get a list of files, type in the following:
+To get a list of files or partitions, type in the following:
 ```
 +OPL:/# ls
+or
++OPL:/# ls -l
 ```
 To transfer a file from the current directory of the PFS partition to the current directory of the process, type in the following:
 ```

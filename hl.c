@@ -107,22 +107,27 @@ int copyfrom(const char *mount_point, const char *src, const char *dest)
 }
 
 
-int list_dir_objects(int dh)
+int list_dir_objects(int dh, int lsmode)
 {
     int result;
     iox_dirent_t dirent;
+    char end_symbol[2];
+    end_symbol[1] = '\0';
     while ((result = iomanx_dread(dh, &dirent)) && result != -1) {
         char mode[10 + 1] = {'\0'}; /* unix-style */
         const int m = dirent.stat.mode;
         switch (m & FIO_S_IFMT) { /* item type */
             case FIO_S_IFLNK:
                 mode[0] = 'l';
+                end_symbol[0] = '@';
                 break;
             case FIO_S_IFREG:
                 mode[0] = '-';
+                end_symbol[0] = '\0';
                 break;
             case FIO_S_IFDIR:
                 mode[0] = 'd';
+                end_symbol[0] = '/';
                 break;
             default:
                 mode[0] = '?';
@@ -145,11 +150,66 @@ int list_dir_objects(int dh)
         sprintf(mod_time, "%04d-%02d-%02d %02d:%02d",
                 mtime->year, mtime->month, mtime->day,
                 mtime->hour, mtime->min);
-
-        printf("%s %10u %s %s\n",
-               mode, dirent.stat.size, mod_time, dirent.name);
+        if (lsmode == 0)
+            printf("%s%s\n",
+                   dirent.name, end_symbol);
+        else if (lsmode == 1)
+            printf("%s %10u  %s  %s%s\n",
+                   mode, dirent.stat.size, mod_time, dirent.name, end_symbol);
     }
     return (result);
+}
+
+
+/* list HDD partitions */
+int lspart(int lsmode)
+{
+    const char *dir_path = "hdd0:";
+    char end_symbol[2];
+    end_symbol[1] = '\0';
+    int retval = 0;
+    int dh = iomanx_dopen(dir_path);
+    if (dh >= 0) { /* dopen successful */
+#if 0
+      printf ("Partitions of %s\n", dir_path);
+#endif
+        int result;
+        iox_dirent_t dirent;
+        while ((result = iomanx_dread(dh, &dirent)) && result != -1) {
+            uint64_t size = (uint64_t)dirent.stat.size * 512;
+            size /= (1024 * 1024);
+
+            if (dirent.stat.attr == 1) /* sub-partition */
+                end_symbol[0] = '@';
+            else if (dirent.stat.mode == 0x0100)
+                end_symbol[0] = '/';
+            else if (dirent.stat.mode == 0x0000) /* empty partition */
+                end_symbol[0] = '%';
+            else
+                end_symbol[0] = '\0';
+
+            const ps2fs_datetime_t *mtime =
+                (ps2fs_datetime_t *)dirent.stat.mtime;
+            char mod_time[16 + 1]; /* yyyy-mm-dd hh:mi */
+            sprintf(mod_time, "%04d-%02d-%02d %02d:%02d",
+                    mtime->year, mtime->month, mtime->day,
+                    mtime->hour, mtime->min);
+            if (lsmode == 0)
+                printf("%s%s\n",
+                       dirent.name, end_symbol);
+            else if (lsmode == 1)
+                printf("0x%04x %9lluMB  %s  %s%s\n",
+                       dirent.stat.mode, size, mod_time, dirent.name, end_symbol);
+        }
+
+        result = iomanx_close(dh);
+        if (result < 0)
+            printf("dclose: failed with %d\n", result), retval = -1;
+    } else
+        printf("dopen: \"%s\" failed with %d\n",
+               dir_path, dh),
+            retval = dh;
+    return (retval);
 }
 
 
@@ -167,7 +227,7 @@ int ls(const char *mount_point, const char *path)
 #if 0
 	  printf ("Directory of %s%s\n", mount_point, path);
 #endif
-            list_dir_objects(dh);
+            list_dir_objects(dh, 1);
 
             result = iomanx_close(dh);
             if (result < 0)
@@ -184,36 +244,6 @@ int ls(const char *mount_point, const char *path)
         printf("pfs0: mount of \"%s\" failed with %d\n",
                mount_point, result),
             retval = -1;
-    return (retval);
-}
-
-
-/* list HDD partitions */
-int lspart(void)
-{
-    const char *dir_path = "hdd0:";
-    int retval = 0;
-    int dh = iomanx_dopen(dir_path);
-    if (dh >= 0) { /* dopen successful */
-#if 0
-      printf ("Partitions of %s\n", dir_path);
-#endif
-        int result;
-        iox_dirent_t dirent;
-        while ((result = iomanx_dread(dh, &dirent)) && result != -1) {
-            uint64_t size = (uint64_t)dirent.stat.size * 512;
-            size /= (1024 * 1024);
-            printf("0x%04x %5lluMB %s\n",
-                   dirent.stat.mode, size, dirent.name);
-        }
-
-        result = iomanx_close(dh);
-        if (result < 0)
-            printf("dclose: failed with %d\n", result), retval = -1;
-    } else
-        printf("dopen: \"%s\" failed with %d\n",
-               dir_path, dh),
-            retval = dh;
     return (retval);
 }
 

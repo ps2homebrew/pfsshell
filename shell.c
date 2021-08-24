@@ -250,8 +250,13 @@ static int do_mkpart(context_t *ctx, int arg, char *argv[])
 
 static int do_ls(context_t *ctx, int argc, char *argv[])
 {
+    int lsmode = 0;
+    if (argc > 1)
+        if (!strncmp(argv[1], "-l", 2))
+            lsmode = 1;
+
     if (!ctx->mount) {         /* no mount: list partitions */
-        int result = lspart(); /* in hl.c */
+        int result = lspart(lsmode); /* in hl.c */
         if (result < 0)
             fprintf(stderr, "(!) lspart: %s.\n", strerror(-result));
         return (result);
@@ -261,7 +266,7 @@ static int do_ls(context_t *ctx, int argc, char *argv[])
         strcat(dir_path, ctx->path);
         int dh = iomanx_dopen(dir_path);
         if (dh >= 0) {            /* dopen successful */
-            list_dir_objects(dh); /* in hl.c */
+            list_dir_objects(dh, lsmode); /* in hl.c */
             (void)iomanx_close(dh);
             return (0);
         } else {
@@ -498,7 +503,7 @@ static int do_help(context_t *ctx, int argc, char *argv[])
         "(destructive);\n"
         "mount <part_name> - mount a partition;\n"
         "umount - un-mount a partition;\n"
-        "ls - no mount: list partitions; mount: list files/dirs;\n"
+        "ls [-l] - no mount: list partitions; mount: list files/dirs;\n"
         "mkdir <dir_name> - create a new directory;\n"
         "rmdir <dir_name> - delete an existing directory;\n"
         "pwd - print current PS2 HDD directory;\n"
@@ -537,6 +542,7 @@ static int exec(void *data, int argc, char *argv[])
         {"mount", 1, need_device + need_no_mount, &do_mount},
         {"umount", 0, need_device + need_mount, &do_umount},
         {"ls", 0, need_device, &do_ls},
+        {"ls", 1, need_device, &do_ls},
         {"mkdir", 1, need_device + need_mount, &do_mkdir},
         {"rmdir", 1, need_device + need_mount, &do_rmdir},
         {"pwd", 0, need_device + need_mount, &do_pwd},
