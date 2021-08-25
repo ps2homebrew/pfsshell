@@ -205,12 +205,19 @@ static int do_initialize(context_t *ctx, int argc, char *argv[])
         return (0);
     } else {
         int result = iomanx_format("hdd0:", NULL, NULL, 0);
+        if (result >= 0) {
+            result = mkfs("__net");
+            mkfs("__system");
+            mkfs("__sysconf");
+            mkfs("__common");
+        }
         if (result < 0)
             fprintf(stderr, "(!) format: %s.\n", strerror(-result));
         return (result);
     }
 }
 
+/*
 static int do_mkfs(context_t *ctx, int argc, char *argv[])
 {
 #define PFS_ZONE_SIZE 8192
@@ -226,6 +233,7 @@ static int do_mkfs(context_t *ctx, int argc, char *argv[])
         fprintf(stderr, "(!) %s: %s.\n", tmp, strerror(-result));
     return (result);
 }
+*/
 
 static int do_mkpart(context_t *ctx, int arg, char *argv[])
 {
@@ -241,8 +249,11 @@ static int do_mkpart(context_t *ctx, int arg, char *argv[])
     else
         sprintf(tmp, "hdd0:%s,,,%dM,PFS", argv[1], size_in_mb);
     int result = iomanx_open(tmp, IOMANX_O_RDWR | IOMANX_O_CREAT);
-    if (result >= 0)
+    if (result >= 0) {
         (void)iomanx_close(result), result = 0;
+        if (result >= 0)
+            result = mkfs(argv[1]);
+    }
     if (result < 0)
         fprintf(stderr, "(!) %s: %s.\n", argv[1], strerror(-result));
     return (result);
@@ -255,7 +266,7 @@ static int do_ls(context_t *ctx, int argc, char *argv[])
         if (!strncmp(argv[1], "-l", 2))
             lsmode = 1;
 
-    if (!ctx->mount) {         /* no mount: list partitions */
+    if (!ctx->mount) {               /* no mount: list partitions */
         int result = lspart(lsmode); /* in hl.c */
         if (result < 0)
             fprintf(stderr, "(!) lspart: %s.\n", strerror(-result));
@@ -265,7 +276,7 @@ static int do_ls(context_t *ctx, int argc, char *argv[])
         strcpy(dir_path, "pfs0:");
         strcat(dir_path, ctx->path);
         int dh = iomanx_dopen(dir_path);
-        if (dh >= 0) {            /* dopen successful */
+        if (dh >= 0) {                    /* dopen successful */
             list_dir_objects(dh, lsmode); /* in hl.c */
             (void)iomanx_close(dh);
             return (0);
@@ -496,10 +507,9 @@ static int do_help(context_t *ctx, int argc, char *argv[])
         "~Command List~\n"
         "lcd [path] - print/change the local working directory\n"
         "device <device> - use this PS2 HDD;\n"
-        "initialize - blank and create APA on a new PS2 HDD (destructive);\n"
-        "mkpart <part_name> <size> - create a new partition;\n"
+        "initialize - blank and create APA/PFS on a new PS2 HDD (destructive);\n"
+        "mkpart <part_name> <size> - create a new PFS formatted partition;\n"
         "\tSize must be a power of 2;\n"
-        "mkfs <part_name> - blank and create PFS on a new partition "
         "(destructive);\n"
         "mount <part_name> - mount a partition;\n"
         "umount - un-mount a partition;\n"
@@ -538,7 +548,7 @@ static int exec(void *data, int argc, char *argv[])
         {"initialize", 0, need_device + need_no_mount, &do_initialize},
         {"initialize", 1, need_device + need_no_mount, &do_initialize},
         {"mkpart", 2, need_device, &do_mkpart},
-        {"mkfs", 1, need_device, &do_mkfs},
+        /* {"mkfs", 1, need_device, &do_mkfs}, */
         {"mount", 1, need_device + need_no_mount, &do_mount},
         {"umount", 0, need_device + need_mount, &do_umount},
         {"ls", 0, need_device, &do_ls},

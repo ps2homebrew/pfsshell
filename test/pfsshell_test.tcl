@@ -47,7 +47,7 @@ proc run_cmd { name cmdparam arg expect } {
 		}
 		-re "(.*)# " {
 			puts "\[\033\[01;31mfailed\033\[0m]"
-			exit 1
+			# exit 1
 		}
 		#eof {
 		#	puts "eof"
@@ -62,17 +62,23 @@ init_process
 
 run_cmd "device" "device test.img" "-re" "(.*)# "
 # TODO: check more from device output
-run_cmd "initialize" "initialize yes" "-exact" "# "
+run_cmd "initialize" "initialize yes" "-exact" "
+pfs: Format: log.number = 8224, log.count = 16\r
+pfs: Format sub: sub = 0, sector start = 8208, sector end = 8211\r
+pfs: Format: log.number = 8224, log.count = 16\r
+pfs: Format sub: sub = 0, sector start = 8208, sector end = 8215\r
+pfs: Format: log.number = 8224, log.count = 16\r
+pfs: Format sub: sub = 0, sector start = 8208, sector end = 8223\r
+pfs: Format: log.number = 8240, log.count = 16\r
+pfs: Format sub: sub = 0, sector start = 8208, sector end = 8239\r
+# "
+
 run_cmd "ls partitions" "ls" "-exact" "
 __mbr\r
 __net/\r
 __system/\r
 __sysconf/\r
 __common/\r
-# "
-run_cmd "mkfs" "mkfs __net" "-exact" "
-pfs: Format: log.number = 8224, log.count = 16\r
-pfs: Format sub: sub = 0, sector start = 8208, sector end = 8211\r
 # "
 
 run_cmd "mkpart" "mkpart PP.TEST 128" "-exact" "# "

@@ -255,12 +255,15 @@ int mkfs(const char *mount_point)
 #define PFS_FRAGMENT 0x00000000
     int format_arg[] = {PFS_ZONE_SIZE, 0x2d66, PFS_FRAGMENT};
 
-    return (iomanx_format("pfs:", mount_point,
+    char tmp[256];
+    strcpy(tmp, "hdd0:");
+    strcat(tmp, mount_point);
+    return (iomanx_format("pfs:", tmp,
                           (void *)&format_arg, sizeof(format_arg)));
 }
 
 
-/* create partition and (optionally) format it as PFS;
+/* create partition and format it as PFS;
  * so far the only sizes supported are powers of 2 */
 int mkpart(const char *mount_point, long size_in_mb, int format)
 {
@@ -281,11 +284,15 @@ int mkpart(const char *mount_point, long size_in_mb, int format)
 
 
 /* initialize PS2 HDD with APA partitioning and create common partitions
- * (__mbr, __common, __net, etc.); common partitions are not PFS-formatted */
+ * (__mbr, __common, __net, etc.); __mbr partition is not PFS-formatted */
 int initialize(void)
 {
     int result = iomanx_format("hdd0:", NULL, NULL, 0);
-    if (result >= 0)
-        result = mkfs("hdd0:__mbr");
+    if (result >= 0){
+        result = mkfs("__net");
+        mkfs("__system");
+        mkfs("__sysconf");
+        mkfs("__common");
+    }
     return (result);
 }
