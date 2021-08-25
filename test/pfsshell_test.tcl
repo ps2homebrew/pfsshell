@@ -14,7 +14,7 @@ proc init_process {} {
 	if { [file exists test.img] == 1} {
 		file delete test.img
 	}
-	exec truncate -s 40G test.img
+	exec truncate -s 10G test.img
 
 	spawn ../build/pfsshell
 	match_max 100000
@@ -81,7 +81,7 @@ __sysconf/\r
 __common/\r
 # "
 
-run_cmd "mkpart" "mkpart PP.TEST 128" "-exact" "# "
+run_cmd "mkpart" "mkpart PP.TEST 128M" "-exact" "# "
 run_cmd "mkpart" "ls" "-exact" "
 __mbr\r
 __net/\r

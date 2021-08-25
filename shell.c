@@ -237,23 +237,95 @@ static int do_mkfs(context_t *ctx, int argc, char *argv[])
 
 static int do_mkpart(context_t *ctx, int arg, char *argv[])
 {
-    int size_in_mb = strtoul(argv[2], NULL, 10);
-    if (size_in_mb == 0) {
+
+    static char *sizesString[9] = {
+        "128M",
+        "256M",
+        "512M",
+        "1G",
+        "2G",
+        "4G",
+        "8G",
+        "16G",
+        "32G"};
+
+    static unsigned int sizesMB[9] = {
+        128,
+        256,
+        512,
+        1024,
+        2048,
+        4096,
+        8192,
+        16384,
+        32768};
+
+    unsigned int size_in_mb = 0;
+
+    char tmp[256];
+    char openString[256];
+    int i = 9;
+    int result = -1;
+    int partfd = 0;
+
+    sprintf(openString, "hdd0:%s", argv[1]);
+    partfd = iomanx_open(openString, IOMANX_O_RDONLY);
+    printf("iomanx_open %d\n", partfd);
+    if (partfd != -2) // partition already exists+
+    {
+        iomanx_close(partfd);
+        printf("%s: partition already exists.\n", argv[1]);
+        return (-1);
+    }
+
+    if (argv[2][strlen(argv[2]) - 1] == 'M') {
+        argv[2][strlen(argv[2]) - 1] = '\0';
+        size_in_mb = strtoul(argv[2], NULL, 10);
+    } else if (argv[2][strlen(argv[2]) - 1] == 'G') {
+        argv[2][strlen(argv[2]) - 1] = '\0';
+        size_in_mb = strtoul(argv[2], NULL, 10) * 1024;
+    } else {
         fprintf(stderr, "%s: invalid partition size.\n", argv[2]);
         return (-1);
     }
 
-    char tmp[256];
-    if (size_in_mb >= 1024)
-        sprintf(tmp, "hdd0:%s,,,%dG,PFS", argv[1], size_in_mb / 1024);
-    else
-        sprintf(tmp, "hdd0:%s,,,%dM,PFS", argv[1], size_in_mb);
-    int result = iomanx_open(tmp, IOMANX_O_RDWR | IOMANX_O_CREAT);
+    while (result < 0 && i > 0) { // create main partition
+        i--;
+        if (sizesMB[i] <= size_in_mb) {
+            sprintf(tmp, "hdd0:%s,,,%s,PFS", argv[1], sizesString[i]);
+            partfd = iomanx_open(tmp, IOMANX_O_RDWR | IOMANX_O_CREAT);
+            if (partfd >= 0) {
+                printf("Main partition of %s created.\n", sizesString[i]);
+                size_in_mb = size_in_mb - sizesMB[i];
+                result = partfd;
+            }
+        }
+    }
+
+    if (i < 0) { // dont create smaller then 128MB Main partition
+        fprintf(stderr, "%s: too small partition size.\n", argv[2]);
+        return (-1);
+    }
+    int j = i; // limit sub partition max size
+    if (partfd >= 0) {
+        while (size_in_mb > 0 && j >= 0) {
+            if (sizesMB[j] <= size_in_mb) {
+                if (iomanx_ioctl2(partfd, 0x6801, sizesString[j], strlen(sizesString[j]) + 1, NULL, 0) >= 0) {
+                    printf("Sub partition of %s created.\n", sizesString[j]);
+                    size_in_mb = size_in_mb - sizesMB[j];
+                } else
+                    j--;
+            } else
+                j--;
+        }
+    }
+
     if (result >= 0) {
-        (void)iomanx_close(result), result = 0;
+        (void)iomanx_close(partfd), result = 0;
         if (result >= 0)
             result = mkfs(argv[1]);
     }
+
     if (result < 0)
         fprintf(stderr, "(!) %s: %s.\n", argv[1], strerror(-result));
     return (result);
@@ -509,8 +581,7 @@ static int do_help(context_t *ctx, int argc, char *argv[])
         "device <device> - use this PS2 HDD;\n"
         "initialize - blank and create APA/PFS on a new PS2 HDD (destructive);\n"
         "mkpart <part_name> <size> - create a new PFS formatted partition;\n"
-        "\tSize must be a power of 2;\n"
-        "(destructive);\n"
+        "\tSize must end with M or G literal (like 384M or 3G);\n"
         "mount <part_name> - mount a partition;\n"
         "umount - un-mount a partition;\n"
         "ls [-l] - no mount: list partitions; mount: list files/dirs;\n"

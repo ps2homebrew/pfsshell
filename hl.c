@@ -171,20 +171,23 @@ int lspart(int lsmode)
     int dh = iomanx_dopen(dir_path);
     if (dh >= 0) { /* dopen successful */
 #if 0
-      printf ("Partitions of %s\n", dir_path);
+        printf("Partitions of %s, dh = %d\n", dir_path, dh);
 #endif
         int result;
         iox_dirent_t dirent;
         while ((result = iomanx_dread(dh, &dirent)) && result != -1) {
-            uint64_t size = (uint64_t)dirent.stat.size * 512;
-            size /= (1024 * 1024);
 
-            if (dirent.stat.attr == 1) /* sub-partition */
+            // Equal to, but avoids overflows of: size * 512 / 1024 / 1024;
+            uint64_t size = (uint64_t)dirent.stat.size / 2048;
+
+            if (dirent.stat.mode == 0x0000) /* empty partition */
+                end_symbol[0] = '%';
+            else if (dirent.stat.attr == 1) /* sub-partition */
                 end_symbol[0] = '@';
             else if (dirent.stat.mode == 0x0100)
                 end_symbol[0] = '/';
-            else if (dirent.stat.mode == 0x0000) /* empty partition */
-                end_symbol[0] = '%';
+            else if (dirent.stat.mode == 0x1337)
+                end_symbol[0] = '*';
             else
                 end_symbol[0] = '\0';
 
@@ -198,7 +201,7 @@ int lspart(int lsmode)
                 printf("%s%s\n",
                        dirent.name, end_symbol);
             else if (lsmode == 1)
-                printf("0x%04x %9lluMB  %s  %s%s\n",
+                printf("0x%04x %7lluMB  %s  %s%s\n",
                        dirent.stat.mode, size, mod_time, dirent.name, end_symbol);
         }
 
@@ -288,7 +291,7 @@ int mkpart(const char *mount_point, long size_in_mb, int format)
 int initialize(void)
 {
     int result = iomanx_format("hdd0:", NULL, NULL, 0);
-    if (result >= 0){
+    if (result >= 0) {
         result = mkfs("__net");
         mkfs("__system");
         mkfs("__sysconf");
