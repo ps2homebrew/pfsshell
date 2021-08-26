@@ -275,7 +275,7 @@ static void *iomanx_adapter_init(struct fuse_conn_info *conn)
 static void iomanx_adapter_destroy(void *private_data)
 {
     (void)private_data;
-    int result = iomanx_umount(IOMANX_MOUNT_POINT);
+    iomanx_umount(IOMANX_MOUNT_POINT);
     extern void atad_close(void); /* fake_sdk/atad.c */
     atad_close();
 }
@@ -362,6 +362,21 @@ static int iomanx_adapter_create(const char *path, mode_t mode, struct fuse_file
     return 0;
 }
 
+static int iomanx_adapter_fsync(const char *path, int isdatasync,
+                                struct fuse_file_info *fi)
+{
+    if (fi == NULL) {
+        return 0;
+    }
+    char translated_path[1024];
+    translate_path(translated_path, path, sizeof(translated_path));
+    int res = iomanx_sync(translated_path, isdatasync);
+    if (res < 0) {
+        return res;
+    }
+    return 0;
+}
+
 static int iomanx_adapter_release(const char *path, struct fuse_file_info *fi)
 {
     (void)path;
@@ -375,19 +390,25 @@ static int iomanx_adapter_release(const char *path, struct fuse_file_info *fi)
     return 0;
 }
 
-static int iomanx_adapter_read(const char *path, char *buf, size_t size, off_t offset,
-                               struct fuse_file_info *fi)
+static int iomanx_adapter_lseek(const char *path, off_t offset,
+                                int whence, struct fuse_file_info *fi)
+
 {
-    size_t len;
-    int res;
-    (void)fi;
+    (void)path;
     if (fi == NULL) {
         return -ENOENT;
     }
-    res = iomanx_lseek64(fi->fh, offset, IOMANX_SEEK_SET);
+    int res = iomanx_lseek64(fi->fh, offset, whence);
     if (res == -48) {
-        res = iomanx_lseek(fi->fh, offset, IOMANX_SEEK_SET);
+        res = iomanx_lseek(fi->fh, offset, whence);
     }
+    return res;
+}
+
+static int iomanx_adapter_read(const char *path, char *buf, size_t size, off_t offset,
+                               struct fuse_file_info *fi)
+{
+    int res = iomanx_adapter_lseek(path, offset, IOMANX_SEEK_SET, fi);
     if (res < 0) {
         return res;
     }
@@ -398,16 +419,7 @@ static int iomanx_adapter_read(const char *path, char *buf, size_t size, off_t o
 static int iomanx_adapter_write(const char *path, const char *buf, size_t size,
                                 off_t offset, struct fuse_file_info *fi)
 {
-    int fh;
-    int res;
-
-    if (fi == NULL) {
-        return -ENOENT;
-    }
-    res = iomanx_lseek64(fi->fh, offset, IOMANX_SEEK_SET);
-    if (res == -48) {
-        res = iomanx_lseek(fi->fh, offset, IOMANX_SEEK_SET);
-    }
+    int res = iomanx_adapter_lseek(path, offset, IOMANX_SEEK_SET, fi);
     if (res < 0) {
         return res;
     }
@@ -417,9 +429,16 @@ static int iomanx_adapter_write(const char *path, const char *buf, size_t size,
 
 static int iomanx_adapter_statfs(const char *path, struct statvfs *buf)
 {
+    (void)path;
     buf->f_bsize = buf->f_frsize = iomanx_devctl(IOMANX_MOUNT_POINT, PDIOC_ZONESZ, NULL, 0, NULL, 0);
+    if (buf->f_bsize < 0) {
+        return buf->f_bsize;
+    }
     buf->f_blocks = totalsectors / (buf->f_frsize / 512);
     buf->f_bfree = buf->f_bavail = iomanx_devctl(IOMANX_MOUNT_POINT, PDIOC_ZONEFREE, NULL, 0, NULL, 0);
+    if (buf->f_bfree < 0) {
+        return buf->f_bfree;
+    }
     // buf->f_files;   /* Total inodes */
     // buf->f_ffree;   /* Free inodes */
     buf->f_namemax = 255; // PFS_NAME_LEN
@@ -479,7 +498,7 @@ static int iomanx_adapter_readdir(const char *path, void *buf, fuse_fill_dir_t f
                                   off_t offset, struct fuse_file_info *fi)
 {
     int dp;
-    int result = 0;
+    int res = 0;
     iox_dirent_t de;
 
     (void)offset;
@@ -493,7 +512,7 @@ static int iomanx_adapter_readdir(const char *path, void *buf, fuse_fill_dir_t f
         return dp;
     }
 
-    while ((result = iomanx_dread(dp, &de)) && (result != -1)) {
+    while ((res = iomanx_dread(dp, &de)) && (res != -1)) {
         struct stat st;
         convert_stat_to_posix(&st, &(de.stat));
         if (filler(buf, de.name, &st, 0))
@@ -501,24 +520,37 @@ static int iomanx_adapter_readdir(const char *path, void *buf, fuse_fill_dir_t f
     }
 
     iomanx_close(dp);
-    return result;
+    return res;
 }
 
 
 static int iomanx_adapter_getattr(const char *path, struct stat *stbuf)
 {
     int res;
-    iox_stat_t stat;
+    iox_stat_t iomanx_stat;
 
     char translated_path[1024];
     translate_path(translated_path, path, sizeof(translated_path));
 
-    res = iomanx_getstat(translated_path, &stat);
+    res = iomanx_getstat(translated_path, &iomanx_stat);
     if (res < 0) {
         return res;
     }
-    convert_stat_to_posix(stbuf, &stat);
+    convert_stat_to_posix(stbuf, &iomanx_stat);
 
+    return 0;
+}
+
+static int iomanx_adapter_ftruncate(const char *path, off_t offset,
+                                    struct fuse_file_info *fi)
+{
+    // allocate blocks can speed up the process, but needs more implementation
+    // int size = offset / 8192;
+    // iomanx_ioctl2(fi->fh, PIOCALLOC, &offset, 4, NULL, 0);
+    int res = iomanx_adapter_lseek(path, offset, IOMANX_SEEK_SET, fi);
+    if (res < 0) {
+        return res;
+    }
     return 0;
 }
 
@@ -533,7 +565,7 @@ static int iomanx_adapter_chmod(const char *path, mode_t mode)
     char translated_path[1024];
     translate_path(translated_path, path, sizeof(translated_path));
 
-    res = iomanx_chstat(translated_path, &stat, FIO_CST_MODE);
+    res = iomanx_chstat(translated_path, &iomanx_stat, FIO_CST_MODE);
     if (res < 0) {
         return res;
     }
@@ -544,14 +576,14 @@ static int iomanx_adapter_chmod(const char *path, mode_t mode)
 static int iomanx_adapter_utimens(const char *path, const struct timespec ts[2])
 {
     int res;
-    iox_stat_t stat;
-    convert_time_to_iomanx(stat.atime, &(ts[0].tv_sec));
-    convert_time_to_iomanx(stat.mtime, &(ts[1].tv_sec));
+    iox_stat_t iomanx_stat;
+    convert_time_to_iomanx(iomanx_stat.atime, &(ts[0].tv_sec));
+    convert_time_to_iomanx(iomanx_stat.mtime, &(ts[1].tv_sec));
 
     char translated_path[1024];
     translate_path(translated_path, path, sizeof(translated_path));
 
-    res = iomanx_chstat(translated_path, &stat, FIO_CST_AT | FIO_CST_MT);
+    res = iomanx_chstat(translated_path, &iomanx_stat, FIO_CST_AT | FIO_CST_MT);
     if (res < 0) {
         return res;
     }
@@ -623,14 +655,15 @@ static const struct fuse_operations iomanx_adapter_operations = {
     // link
     .chmod = iomanx_adapter_chmod,
     // chown
-    // *truncate
+    // ftruncate renamed to truncate into later libfuse
+    .ftruncate = iomanx_adapter_ftruncate,
     .open = iomanx_adapter_open,
     .read = iomanx_adapter_read,
     .write = iomanx_adapter_write,
     .statfs = iomanx_adapter_statfs,
     // *flush sshfs
     .release = iomanx_adapter_release,
-    // *fsync
+    .fsync = iomanx_adapter_fsync,
     // setxattr
     // getxattr
     // listxattr
@@ -652,8 +685,10 @@ static const struct fuse_operations iomanx_adapter_operations = {
     // read_buf
     // flock
     // fallocate
+
+    // below will be implemented in later libfuse
     // copy_file_range
-    // lseek
+    // .lseek = iomanx_adapter_lseek,
 
     /*
     https://libfuse.github.io/doxygen/structfuse__operations.html
