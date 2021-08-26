@@ -49,7 +49,7 @@ static int check_requirements(context_t *ctx, enum requirements req)
 size_t getline(char **lineptr, size_t *n, FILE *stream)
 {
     char *bufptr = NULL;
-    char *p = bufptr;
+    char *p;
     size_t size;
     int c;
 
@@ -262,13 +262,14 @@ static int do_mkpart(context_t *ctx, int arg, char *argv[])
 
     unsigned int size_in_mb = 0;
 
-    char tmp[256];
-    char openString[256];
+    char tmp[128];
+    char openString[32 + 5];
     int i = 9;
     int result = -1;
     int partfd = 0;
 
     sprintf(openString, "hdd0:%s", argv[1]);
+    openString[32 + 5 - 1] = '\0';
     partfd = iomanx_open(openString, IOMANX_O_RDONLY);
     printf("iomanx_open %d\n", partfd);
     if (partfd != -2) // partition already exists+
@@ -310,7 +311,7 @@ static int do_mkpart(context_t *ctx, int arg, char *argv[])
     if (partfd >= 0) {
         while (size_in_mb > 0 && j >= 0) {
             if (sizesMB[j] <= size_in_mb) {
-                if (iomanx_ioctl2(partfd, 0x6801, sizesString[j], strlen(sizesString[j]) + 1, NULL, 0) >= 0) {
+                if (iomanx_ioctl2(partfd, HIOCADDSUB, sizesString[j], strlen(sizesString[j]) + 1, NULL, 0) >= 0) {
                     printf("Sub partition of %s created.\n", sizesString[j]);
                     size_in_mb = size_in_mb - sizesMB[j];
                 } else
@@ -638,7 +639,7 @@ static int exec(void *data, int argc, char *argv[])
     static const size_t CMD_COUNT = sizeof(CMD) / sizeof(CMD[0]);
 
     context_t *ctx = (context_t *)data;
-    int i;
+    unsigned int i;
     for (i = 0; i < CMD_COUNT; ++i) {
         const struct command *cmd = CMD + i;
         if (!strcmp(argv[0], cmd->name) && cmd->args == argc - 1) {
@@ -663,7 +664,7 @@ int shell(FILE *in, FILE *out, FILE *err)
 
     fputs(
         "pfsshell for POSIX systems\n"
-        "https://github.com/uyjulian/pfsshell\n"
+        "https://github.com/ps2homebrew/pfsshell\n"
         "\n"
         "This program uses pfs, apa, iomanX, \n"
         "code from ps2sdk (https://github.com/ps2dev/ps2sdk)\n"

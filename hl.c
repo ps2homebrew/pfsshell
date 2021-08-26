@@ -178,7 +178,7 @@ int lspart(int lsmode)
         while ((result = iomanx_dread(dh, &dirent)) && result != -1) {
 
             // Equal to, but avoids overflows of: size * 512 / 1024 / 1024;
-            uint64_t size = (uint64_t)dirent.stat.size / 2048;
+            uint32_t size = dirent.stat.size / 2048;
 
             if (dirent.stat.mode == 0x0000) /* empty partition */
                 end_symbol[0] = '%';
@@ -201,7 +201,7 @@ int lspart(int lsmode)
                 printf("%s%s\n",
                        dirent.name, end_symbol);
             else if (lsmode == 1)
-                printf("0x%04x %7lluMB  %s  %s%s\n",
+                printf("0x%04x %7uMB  %s  %s%s\n",
                        dirent.stat.mode, size, mod_time, dirent.name, end_symbol);
         }
 

@@ -19,7 +19,7 @@ proc init_process {} {
 	spawn ../build/pfsshell
 	match_max 100000
 	expect -exact "pfsshell for POSIX systems\r
-https://github.com/uyjulian/pfsshell\r
+https://github.com/ps2homebrew/pfsshell\r
 \r
 This program uses pfs, apa, iomanX, \r
 code from ps2sdk (https://github.com/ps2dev/ps2sdk)\r
