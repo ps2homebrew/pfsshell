@@ -13,6 +13,8 @@
 
 #define IOMANX_MOUNT_POINT "pfs0:"
 
+static int totalsectors;
+
 /*
  * Command line options
  *
@@ -413,6 +415,18 @@ static int iomanx_adapter_write(const char *path, const char *buf, size_t size,
     return res;
 }
 
+static int iomanx_adapter_statfs(const char *path, struct statvfs *buf)
+{
+    buf->f_bsize = buf->f_frsize = iomanx_devctl(IOMANX_MOUNT_POINT, PDIOC_ZONESZ, NULL, 0, NULL, 0);
+    buf->f_blocks = totalsectors / (buf->f_frsize / 512);
+    buf->f_bfree = buf->f_bavail = iomanx_devctl(IOMANX_MOUNT_POINT, PDIOC_ZONEFREE, NULL, 0, NULL, 0);
+    // buf->f_files;   /* Total inodes */
+    // buf->f_ffree;   /* Free inodes */
+    buf->f_namemax = 255; // PFS_NAME_LEN
+
+    return 0;
+}
+
 static int iomanx_adapter_unlink(const char *path)
 {
     int res;
@@ -598,23 +612,53 @@ static int iomanx_adapter_readlink(const char *path, char *buf, size_t size)
 }
 
 static const struct fuse_operations iomanx_adapter_operations = {
-    .init = iomanx_adapter_init,
-    .destroy = iomanx_adapter_destroy,
+    .getattr = iomanx_adapter_getattr,
+    .readlink = iomanx_adapter_readlink,
+    // mknod sshfs
+    .mkdir = iomanx_adapter_mkdir,
+    .unlink = iomanx_adapter_unlink,
+    .rmdir = iomanx_adapter_rmdir,
+    .symlink = iomanx_adapter_symlink,
+    .rename = iomanx_adapter_rename,
+    // link
+    .chmod = iomanx_adapter_chmod,
+    // chown
+    // *truncate
     .open = iomanx_adapter_open,
-    .create = iomanx_adapter_create,
-    .release = iomanx_adapter_release,
     .read = iomanx_adapter_read,
     .write = iomanx_adapter_write,
-    .unlink = iomanx_adapter_unlink,
-    .mkdir = iomanx_adapter_mkdir,
-    .rmdir = iomanx_adapter_rmdir,
+    .statfs = iomanx_adapter_statfs,
+    // *flush sshfs
+    .release = iomanx_adapter_release,
+    // *fsync
+    // setxattr
+    // getxattr
+    // listxattr
+    // removexattr
+    // *opendir sshfs
     .readdir = iomanx_adapter_readdir,
-    .getattr = iomanx_adapter_getattr,
-    .chmod = iomanx_adapter_chmod,
+    // *releasedir sshfs
+    // *fsyncdir
+    .init = iomanx_adapter_init,
+    .destroy = iomanx_adapter_destroy,
+    // *access sshfs
+    .create = iomanx_adapter_create,
+    // *lock
     .utimens = iomanx_adapter_utimens,
-    .rename = iomanx_adapter_rename,
-    .symlink = iomanx_adapter_symlink,
-    .readlink = iomanx_adapter_readlink,
+    // bmap
+    // ioctl
+    // poll
+    // write_buf
+    // read_buf
+    // flock
+    // fallocate
+    // copy_file_range
+    // lseek
+
+    /*
+    https://libfuse.github.io/doxygen/structfuse__operations.html
+    */
+
 };
 
 static void show_help(const char *progname)
@@ -689,6 +733,16 @@ int main(int argc, char *argv[])
     char mount_point[256];
     strncpy(mount_point, "hdd0:", sizeof(mount_point));
     strncat(mount_point, options.partition, sizeof(mount_point) - strlen(mount_point) - 1);
+
+    /* do some stuff for statvfs before mounting */
+    totalsectors = 0;
+    int fd = iomanx_open(mount_point, IOMANX_O_RDONLY);
+    int nsub = iomanx_ioctl2(fd, HIOCNSUB, NULL, 0, NULL, 0);
+    for (int i = 0; i < nsub + 1; i++) {
+        totalsectors += iomanx_ioctl2(fd, HIOCGETSIZE, &i, 4, NULL, 0);
+    }
+    iomanx_close(fd);
+
     result = iomanx_mount(IOMANX_MOUNT_POINT, mount_point, 0, NULL, 0);
     if (result < 0) {
         fprintf(stderr, "(!) %s: %s.\n", mount_point, strerror(-result));

@@ -82,6 +82,28 @@ extern int _init_hdlfs(int argc, char *argv[]);
 /* File attributes that are retrieved using the getstat and dread calls, and
    set using chstat.  */
 
+//
+// HDD IOCTL2 commands
+//
+#define HIOCADDSUB 0x6801
+#define HIOCDELSUB 0x6802
+#define HIOCNSUB 0x6803
+#define HIOCFLUSH 0x6804
+
+// Arbitrarily-named commands
+#define HIOCTRANSFER 0x6832     // Used by PFS.IRX to read/write data
+#define HIOCGETSIZE 0x6833      // For main(0)/subs(1+)
+#define HIOCSETPARTERROR 0x6834 // Set (sector of a partition) that has an error
+#define HIOCGETPARTERROR 0x6835 // Get (sector of a partition) that has an error
+
+// PFS DEVCTL commands
+// Command set 'P'
+#define PDIOC_ZONESZ 0x5001
+#define PDIOC_ZONEFREE 0x5002
+#define PDIOC_CLOSEALL 0x5003
+#define PDIOC_GETFSCKSTAT 0x5004
+#define PDIOC_CLRFSCKSTAT 0x5005
+
 /* ps2_hdd.h: Date/time descriptor used in on-disk partition header */
 typedef struct ps2fs_datetime_type
 {
