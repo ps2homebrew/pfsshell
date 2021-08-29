@@ -49,7 +49,7 @@ static int check_requirements(context_t *ctx, enum requirements req)
 size_t getline(char **lineptr, size_t *n, FILE *stream)
 {
     char *bufptr = NULL;
-    char *p = bufptr;
+    char *p;
     size_t size;
     int c;
 
@@ -205,12 +205,19 @@ static int do_initialize(context_t *ctx, int argc, char *argv[])
         return (0);
     } else {
         int result = iomanx_format("hdd0:", NULL, NULL, 0);
+        if (result >= 0) {
+            result = mkfs("__net");
+            mkfs("__system");
+            mkfs("__sysconf");
+            mkfs("__common");
+        }
         if (result < 0)
             fprintf(stderr, "(!) format: %s.\n", strerror(-result));
         return (result);
     }
 }
 
+/*
 static int do_mkfs(context_t *ctx, int argc, char *argv[])
 {
 #define PFS_ZONE_SIZE 8192
@@ -226,23 +233,100 @@ static int do_mkfs(context_t *ctx, int argc, char *argv[])
         fprintf(stderr, "(!) %s: %s.\n", tmp, strerror(-result));
     return (result);
 }
+*/
 
 static int do_mkpart(context_t *ctx, int arg, char *argv[])
 {
-    int size_in_mb = strtoul(argv[2], NULL, 10);
-    if (size_in_mb == 0) {
+
+    static char *sizesString[9] = {
+        "128M",
+        "256M",
+        "512M",
+        "1G",
+        "2G",
+        "4G",
+        "8G",
+        "16G",
+        "32G"};
+
+    static unsigned int sizesMB[9] = {
+        128,
+        256,
+        512,
+        1024,
+        2048,
+        4096,
+        8192,
+        16384,
+        32768};
+
+    unsigned int size_in_mb = 0;
+
+    char tmp[128];
+    char openString[32 + 5];
+    int i = 9;
+    int result = -1;
+    int partfd = 0;
+
+    sprintf(openString, "hdd0:%s", argv[1]);
+    openString[32 + 5 - 1] = '\0';
+    partfd = iomanx_open(openString, IOMANX_O_RDONLY);
+    printf("iomanx_open %d\n", partfd);
+    if (partfd != -2) // partition already exists+
+    {
+        iomanx_close(partfd);
+        printf("%s: partition already exists.\n", argv[1]);
+        return (-1);
+    }
+
+    if (argv[2][strlen(argv[2]) - 1] == 'M') {
+        argv[2][strlen(argv[2]) - 1] = '\0';
+        size_in_mb = strtoul(argv[2], NULL, 10);
+    } else if (argv[2][strlen(argv[2]) - 1] == 'G') {
+        argv[2][strlen(argv[2]) - 1] = '\0';
+        size_in_mb = strtoul(argv[2], NULL, 10) * 1024;
+    } else {
         fprintf(stderr, "%s: invalid partition size.\n", argv[2]);
         return (-1);
     }
 
-    char tmp[256];
-    if (size_in_mb >= 1024)
-        sprintf(tmp, "hdd0:%s,,,%dG,PFS", argv[1], size_in_mb / 1024);
-    else
-        sprintf(tmp, "hdd0:%s,,,%dM,PFS", argv[1], size_in_mb);
-    int result = iomanx_open(tmp, IOMANX_O_RDWR | IOMANX_O_CREAT);
-    if (result >= 0)
-        (void)iomanx_close(result), result = 0;
+    while (result < 0 && i > 0) { // create main partition
+        i--;
+        if (sizesMB[i] <= size_in_mb) {
+            sprintf(tmp, "hdd0:%s,,,%s,PFS", argv[1], sizesString[i]);
+            partfd = iomanx_open(tmp, IOMANX_O_RDWR | IOMANX_O_CREAT);
+            if (partfd >= 0) {
+                printf("Main partition of %s created.\n", sizesString[i]);
+                size_in_mb = size_in_mb - sizesMB[i];
+                result = partfd;
+            }
+        }
+    }
+
+    if (i < 0) { // dont create smaller then 128MB Main partition
+        fprintf(stderr, "%s: too small partition size.\n", argv[2]);
+        return (-1);
+    }
+    int j = i; // limit sub partition max size
+    if (partfd >= 0) {
+        while (size_in_mb > 0 && j >= 0) {
+            if (sizesMB[j] <= size_in_mb) {
+                if (iomanx_ioctl2(partfd, HIOCADDSUB, sizesString[j], strlen(sizesString[j]) + 1, NULL, 0) >= 0) {
+                    printf("Sub partition of %s created.\n", sizesString[j]);
+                    size_in_mb = size_in_mb - sizesMB[j];
+                } else
+                    j--;
+            } else
+                j--;
+        }
+    }
+
+    if (result >= 0) {
+        (void)iomanx_close(partfd), result = 0;
+        if (result >= 0)
+            result = mkfs(argv[1]);
+    }
+
     if (result < 0)
         fprintf(stderr, "(!) %s: %s.\n", argv[1], strerror(-result));
     return (result);
@@ -250,8 +334,13 @@ static int do_mkpart(context_t *ctx, int arg, char *argv[])
 
 static int do_ls(context_t *ctx, int argc, char *argv[])
 {
-    if (!ctx->mount) {         /* no mount: list partitions */
-        int result = lspart(); /* in hl.c */
+    int lsmode = 0;
+    if (argc > 1)
+        if (!strncmp(argv[1], "-l", 2))
+            lsmode = 1;
+
+    if (!ctx->mount) {               /* no mount: list partitions */
+        int result = lspart(lsmode); /* in hl.c */
         if (result < 0)
             fprintf(stderr, "(!) lspart: %s.\n", strerror(-result));
         return (result);
@@ -260,8 +349,8 @@ static int do_ls(context_t *ctx, int argc, char *argv[])
         strcpy(dir_path, "pfs0:");
         strcat(dir_path, ctx->path);
         int dh = iomanx_dopen(dir_path);
-        if (dh >= 0) {            /* dopen successful */
-            list_dir_objects(dh); /* in hl.c */
+        if (dh >= 0) {                    /* dopen successful */
+            list_dir_objects(dh, lsmode); /* in hl.c */
             (void)iomanx_close(dh);
             return (0);
         } else {
@@ -491,14 +580,12 @@ static int do_help(context_t *ctx, int argc, char *argv[])
         "~Command List~\n"
         "lcd [path] - print/change the local working directory\n"
         "device <device> - use this PS2 HDD;\n"
-        "initialize - blank and create APA on a new PS2 HDD (destructive);\n"
-        "mkpart <part_name> <size> - create a new partition;\n"
-        "\tSize must be a power of 2;\n"
-        "mkfs <part_name> - blank and create PFS on a new partition "
-        "(destructive);\n"
+        "initialize - blank and create APA/PFS on a new PS2 HDD (destructive);\n"
+        "mkpart <part_name> <size> - create a new PFS formatted partition;\n"
+        "\tSize must end with M or G literal (like 384M or 3G);\n"
         "mount <part_name> - mount a partition;\n"
         "umount - un-mount a partition;\n"
-        "ls - no mount: list partitions; mount: list files/dirs;\n"
+        "ls [-l] - no mount: list partitions; mount: list files/dirs;\n"
         "mkdir <dir_name> - create a new directory;\n"
         "rmdir <dir_name> - delete an existing directory;\n"
         "pwd - print current PS2 HDD directory;\n"
@@ -533,10 +620,11 @@ static int exec(void *data, int argc, char *argv[])
         {"initialize", 0, need_device + need_no_mount, &do_initialize},
         {"initialize", 1, need_device + need_no_mount, &do_initialize},
         {"mkpart", 2, need_device, &do_mkpart},
-        {"mkfs", 1, need_device, &do_mkfs},
+        /* {"mkfs", 1, need_device, &do_mkfs}, */
         {"mount", 1, need_device + need_no_mount, &do_mount},
         {"umount", 0, need_device + need_mount, &do_umount},
         {"ls", 0, need_device, &do_ls},
+        {"ls", 1, need_device, &do_ls},
         {"mkdir", 1, need_device + need_mount, &do_mkdir},
         {"rmdir", 1, need_device + need_mount, &do_rmdir},
         {"pwd", 0, need_device + need_mount, &do_pwd},
@@ -551,7 +639,7 @@ static int exec(void *data, int argc, char *argv[])
     static const size_t CMD_COUNT = sizeof(CMD) / sizeof(CMD[0]);
 
     context_t *ctx = (context_t *)data;
-    int i;
+    unsigned int i;
     for (i = 0; i < CMD_COUNT; ++i) {
         const struct command *cmd = CMD + i;
         if (!strcmp(argv[0], cmd->name) && cmd->args == argc - 1) {
@@ -576,7 +664,7 @@ int shell(FILE *in, FILE *out, FILE *err)
 
     fputs(
         "pfsshell for POSIX systems\n"
-        "https://github.com/uyjulian/pfsshell\n"
+        "https://github.com/ps2homebrew/pfsshell\n"
         "\n"
         "This program uses pfs, apa, iomanX, \n"
         "code from ps2sdk (https://github.com/ps2dev/ps2sdk)\n"

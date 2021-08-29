@@ -267,7 +267,7 @@ static void DESEncryptPassword(u32 id_lo, u32 id_hi, char *password_out, const c
 				C lo	27:0	llllllllllllllllllllllllllll0000
 				D hi	23:0	HHHHHHHHHHHHHHHHHHHHHHHH00000000	All zero
 				D lo	31:24	000000000000000000000000XXXXLLLL
-				
+
 				l = C lo	L = D lo
 				h = C hi	H = D hi	X = unused bits (28/32-bit value)	*/
         input_lo = 0 | (pPairD->lo << 8);

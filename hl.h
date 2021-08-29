@@ -7,11 +7,11 @@ int copyto(const char *mount_point, const char *dest, const char *src);
 int copyfrom(const char *mount_point, const char *src, const char *dest);
 
 /* list files at PFS */
-int list_dir_objects(int dh);
+int list_dir_objects(int dh, int lsmode);
 int ls(const char *mount_point, const char *path);
 
 /* list HDD partitions */
-int lspart(void);
+int lspart(int lsmode);
 
 /* create PFS onto an existing partition */
 int mkfs(const char *mount_point);
