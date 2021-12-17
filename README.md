@@ -26,8 +26,8 @@ To select a device which can be a disk image or block device, type in the follow
 
 On the Windows systems, the block devices can be used by using the UNC path. To get the UNC path, use this command:
 
-```sh
-wmic diskdrive get Caption,DeviceID
+```cmd
+wmic diskdrive get Caption,DeviceID,InterfaceType
 ```
 
 Once a device is selected, the prompt will change to the following:
