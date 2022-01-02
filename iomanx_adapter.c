@@ -6,6 +6,13 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#ifdef _WIN32
+#define timegm _mkgmtime
+#define pfsfuse_stat FUSE_STAT
+#else
+#define pfsfuse_stat stat
+#endif
+
 #define FUSE_USE_VERSION 26
 #include <fuse.h>
 
@@ -91,7 +98,11 @@ static void convert_time_to_iomanx(unsigned char *iomanx_time, const time_t *pos
     time_t rawtime = *posix_time;
     // convert JST->UTC
     rawtime -= (9 * 60 * 60);
+#ifndef _WIN32
     gmtime_r(&rawtime, &timeinfo);
+#else
+    gmtime_s(&timeinfo, &rawtime);
+#endif
     iomanx_time[0] = 0;
     iomanx_time[1] = timeinfo.tm_sec;
     iomanx_time[2] = timeinfo.tm_min;
@@ -111,9 +122,11 @@ static void convert_mode_to_posix(mode_t *posix_mode, const unsigned int *iomanx
     if (FIO_S_ISREG(*iomanx_mode)) {
         *posix_mode |= S_IFREG;
     }
+#ifndef _WIN32
     if (FIO_S_ISLNK(*iomanx_mode)) {
         *posix_mode |= S_IFLNK;
     }
+#endif
 #if 0
     if (*iomanx_mode & FIO_S_IRUSR) {
         *posix_mode |= S_IRUSR;
@@ -153,6 +166,7 @@ static void convert_mode_to_posix(mode_t *posix_mode, const unsigned int *iomanx
         *posix_mode |= S_IXUSR | S_IXGRP | S_IXOTH;
     }
 #endif
+#ifndef _WIN32
     if (*iomanx_mode & FIO_S_ISUID) {
         *posix_mode |= S_ISUID;
     }
@@ -162,6 +176,7 @@ static void convert_mode_to_posix(mode_t *posix_mode, const unsigned int *iomanx
     if (*iomanx_mode & FIO_S_ISVTX) {
         *posix_mode |= S_ISVTX;
     }
+#endif
 }
 
 static void convert_mode_to_iomanx(unsigned int *iomanx_mode, const mode_t *posix_mode)
@@ -173,9 +188,11 @@ static void convert_mode_to_iomanx(unsigned int *iomanx_mode, const mode_t *posi
     if (S_ISREG(*posix_mode)) {
         *iomanx_mode |= FIO_S_IFREG;
     }
+#ifndef _WIN32
     if (S_ISLNK(*posix_mode)) {
         *iomanx_mode |= FIO_S_IFLNK;
     }
+#endif
 #if 0
     if (*posix_mode & S_IRUSR) {
         *iomanx_mode |= FIO_S_IRUSR;
@@ -215,6 +232,7 @@ static void convert_mode_to_iomanx(unsigned int *iomanx_mode, const mode_t *posi
         *iomanx_mode |= FIO_S_IXUSR | FIO_S_IXGRP | FIO_S_IXOTH;
     }
 #endif
+#ifndef _WIN32
     if (*posix_mode & S_ISUID) {
         *iomanx_mode |= FIO_S_ISUID;
     }
@@ -224,9 +242,10 @@ static void convert_mode_to_iomanx(unsigned int *iomanx_mode, const mode_t *posi
     if (*posix_mode & S_ISVTX) {
         *iomanx_mode |= FIO_S_ISVTX;
     }
+#endif
 }
 
-static void convert_stat_to_posix(struct stat *posix_stat, const iox_stat_t *iomanx_stat)
+static void convert_stat_to_posix(struct pfsfuse_stat *posix_stat, const iox_stat_t *iomanx_stat)
 {
     memset(posix_stat, 0, sizeof(*posix_stat));
     posix_stat->st_size = iomanx_stat->size;
@@ -237,16 +256,22 @@ static void convert_stat_to_posix(struct stat *posix_stat, const iox_stat_t *iom
 #if 0
     posix_stat->st_attr = iomanx_stat->attr;
 #endif
+#ifndef _WIN32
     convert_time_to_posix(&(posix_stat->st_ctime), iomanx_stat->ctime);
     convert_time_to_posix(&(posix_stat->st_atime), iomanx_stat->atime);
     convert_time_to_posix(&(posix_stat->st_mtime), iomanx_stat->mtime);
+#else
+    convert_time_to_posix(&(posix_stat->st_ctim), iomanx_stat->ctime);
+    convert_time_to_posix(&(posix_stat->st_atim), iomanx_stat->atime);
+    convert_time_to_posix(&(posix_stat->st_mtim), iomanx_stat->mtime);
+#endif
 #if 0
     posix_stat->st_uid = iomanx_stat->private_0;
     posix_stat->st_gid = iomanx_stat->private_1;
 #endif
 }
 
-static void convert_stat_to_iomanx(iox_stat_t *iomanx_stat, const struct stat *posix_stat)
+static void convert_stat_to_iomanx(iox_stat_t *iomanx_stat, const struct pfsfuse_stat *posix_stat)
 {
     memset(iomanx_stat, 0, sizeof(*iomanx_stat));
     iomanx_stat->size = posix_stat->st_size & 0xffffffff;
@@ -257,9 +282,15 @@ static void convert_stat_to_iomanx(iox_stat_t *iomanx_stat, const struct stat *p
 #if 0
     posix_stat->st_attr = iomanx_stat->attr;
 #endif
+#ifndef _WIN32
     convert_time_to_iomanx(iomanx_stat->ctime, &(posix_stat->st_ctime));
     convert_time_to_iomanx(iomanx_stat->atime, &(posix_stat->st_atime));
     convert_time_to_iomanx(iomanx_stat->mtime, &(posix_stat->st_mtime));
+#else
+    convert_time_to_iomanx(iomanx_stat->ctime, &(posix_stat->st_ctim));
+    convert_time_to_iomanx(iomanx_stat->atime, &(posix_stat->st_atim));
+    convert_time_to_iomanx(iomanx_stat->mtime, &(posix_stat->st_mtim));
+#endif
 #if 0
     posix_stat->st_uid = iomanx_stat->private_0;
     posix_stat->st_gid = iomanx_stat->private_1;
@@ -295,9 +326,11 @@ static int iomanx_adapter_open(const char *path, struct fuse_file_info *fi)
     if ((fi->flags & O_ACCMODE) == O_RDWR) {
         flags |= IOMANX_O_RDWR;
     }
+#ifndef _WIN32
     if (fi->flags & O_NONBLOCK) {
         flags |= IOMANX_O_NBLOCK;
     }
+#endif
     if (fi->flags & O_APPEND) {
         flags |= IOMANX_O_APPEND;
     }
@@ -336,9 +369,11 @@ static int iomanx_adapter_create(const char *path, mode_t mode, struct fuse_file
     if ((fi->flags & O_ACCMODE) == O_RDWR) {
         flags |= IOMANX_O_RDWR;
     }
+#ifndef _WIN32
     if (fi->flags & O_NONBLOCK) {
         flags |= IOMANX_O_NBLOCK;
     }
+#endif
     if (fi->flags & O_APPEND) {
         flags |= IOMANX_O_APPEND;
     }
@@ -513,7 +548,7 @@ static int iomanx_adapter_readdir(const char *path, void *buf, fuse_fill_dir_t f
     }
 
     while ((res = iomanx_dread(dp, &de)) && (res != -1)) {
-        struct stat st;
+        struct pfsfuse_stat st;
         convert_stat_to_posix(&st, &(de.stat));
         if (filler(buf, de.name, &st, 0))
             break;
@@ -524,7 +559,7 @@ static int iomanx_adapter_readdir(const char *path, void *buf, fuse_fill_dir_t f
 }
 
 
-static int iomanx_adapter_getattr(const char *path, struct stat *stbuf)
+static int iomanx_adapter_getattr(const char *path, struct pfsfuse_stat *stbuf)
 {
     int res;
     iox_stat_t iomanx_stat;
@@ -558,7 +593,7 @@ static int iomanx_adapter_chmod(const char *path, mode_t mode)
 {
     int res;
     iox_stat_t iomanx_stat;
-    struct stat posix_stat;
+    struct pfsfuse_stat posix_stat;
     posix_stat.st_mode = mode;
     convert_stat_to_iomanx(&iomanx_stat, &posix_stat);
 
