@@ -67,7 +67,8 @@ Once you are finished with the program, type in the following:
 ## pfsfuse
 
 `pfsfuse` provides an ability to mount partition into host filesystem (like network folder).
-Your system has to support fuse. For example, on the WSL2 `fuse` package should be installed, on the MacOs `macfuse` package can be used.
+`pfsfuse` supports physically connected drives, raw drive images as regular files, and an NBD network server from OPL.
+Your system has to support fuse. For example, in the Linux `fuse` package should be installed, on the MacOS `macfuse` can be used.
 The Unix users can use the following command for mounting the partition:
 
 ```sh
@@ -81,6 +82,23 @@ df -h mountpoint/ # will show information about free space
     umount mountpoint
 
 Note: for full access without root, use the argument `-o allow_other` when mounting.
+
+### pfsfuse-win32 ###
+
+Windows port uses [Dokan FUSE wrapper](https://github.com/dokan-dev/dokany) implementation as a base. Before using `pfsfuse` on Windows you should install Dokany. [Installation instructions](https://github.com/dokan-dev/dokany/wiki/Installation). After successful installation, you can use `pfsfuse` by pasting command in command line (CMD) or PowerShell with elevated privileges (run as administrator):
+```sh
+pfsfuse.exe --partition=+OPL \\.\PHYSICALDRIVE2 M -o volname=+OPL
+or
+pfsfuse.exe --partition=+OPL D:\ps2image.bin M -o volname=+OPL
+```
+
+Where `M` - is drive letter (please choose unused driver letter). `-o volname=+OPL` - will be volume name in File Explorer.
+For unmounting, please locate dokanctl.exe and launch the following command in the elevated command prompt:
+```sh
+dokanctl.exe /u M
+```
+Where `M` - is mounted point drive letter.
+
 ## NBD server support
 
 The latest Open PS2 Loader revisions have a built-in NBD server. `pfsshell/pfsfuse` have full support for an NBD block device, once an NBD server is mounted in the host filesystem.

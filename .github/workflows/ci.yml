@@ -106,18 +106,56 @@ jobs:
           name: pfsshell-win32
           path: build/*.7z
 
-      # - name: Build pfsfuse
-      #   continue-on-error: true
-      #   run: |
-      #     sudo apt-get install mingw-w64-tools fuse libfuse-dev
-      #     rm -rf build/
-      #     meson setup build/ -Denable_pfsfuse=true --cross-file ./external/meson_toolchains/mingw32_meson.ini
-      #     meson compile -C build
+      - name: Build pfsfuse
+        continue-on-error: true
+        run: |
+          rm -rf build/
+          meson setup build/ -Denable_pfsfuse=true --cross-file ./external/meson_toolchains/mingw32_meson.ini
+          meson compile -C build
+          cp -f external/dokany/license.lgpl.txt build/
 
-      # - uses: actions/upload-artifact@master
-      #   with:
-      #     name: pfsfuse-win32
-      #     path: build/pfsfuse.exe
+      - uses: actions/upload-artifact@master
+        continue-on-error: true
+        with:
+          name: pfsfuse-win32
+          path: |
+            build/pfsfuse.exe
+            build/libdokanfuse*.dll
+            build/license.lgpl.txt
+
+  build-pfsfuse-win32:
+    runs-on: windows-latest
+    defaults:
+     run:
+      shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Install MSYS2 packages
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW32
+          install: |
+            base-devel git make texinfo patch binutils mpc-devel p7zip mingw-w64-i686-gcc
+            mingw-w64-i686-cmake mingw-w64-i686-extra-cmake-modules mingw-w64-i686-make mingw-w64-i686-meson
+          update: true
+          shell: msys2 {0}
+
+      - name: Build pfsfuse
+        run: |
+          meson setup build/ -Denable_pfsfuse=true
+          meson compile -C build
+          cp -f external/dokany/license.lgpl.txt build/
+
+      - uses: actions/upload-artifact@master
+        with:
+          name: pfsfuse-win32
+          path: |
+            build/pfsfuse.exe
+            build/libdokanfuse*.dll
+            build/license.lgpl.txt
 
   build-macos:
     runs-on: macos-10.15
@@ -166,7 +204,7 @@ jobs:
           path: build/pfsfuse
 
   create-release:
-    needs: [build-ubuntu, build-win32, build-macos]
+    needs: [build-ubuntu, build-win32, build-macos, build-pfsfuse-win32]
     runs-on: ubuntu-20.04
     if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/master'
     steps:
@@ -179,6 +217,7 @@ jobs:
           7z a -tzip pfsshell-macos.zip pfsshell-macos/*
           7z a -tzip pfsfuse-ubuntu.zip pfsfuse-ubuntu/*
           7z a -tzip pfsfuse-macos.zip pfsfuse-macos/*
+          7z a -tzip pfsfuse-win32.zip pfsfuse-win32/*
 
       - name: Create prerelease
         if: github.ref == 'refs/heads/master'
@@ -190,6 +229,7 @@ jobs:
           title: "Latest development builds"
           files: |
             pfsshell-win32/*
+            pfsfuse-win32.zip
             pfsshell-ubuntu.zip
             pfsshell-macos.zip
             pfsfuse-ubuntu.zip
@@ -203,6 +243,7 @@ jobs:
           prerelease: "${{ contains(github.ref, '-rc') }}"
           files: |
             pfsshell-win32/*
+            pfsfuse-win32.zip
             pfsshell-ubuntu.zip
             pfsshell-macos.zip
             pfsfuse-ubuntu.zip

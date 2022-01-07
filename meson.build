@@ -1,4 +1,4 @@
-project('pfsshell', 'c', default_options: ['optimization=0', 'debug=true', 'warning_level=1'], version: 'v1.1.1')
+project('pfsshell', 'c', default_options: ['optimization=0', 'debug=true', 'warning_level=0'], version: 'v1.1.1')
 
 add_global_arguments(['-Wno-unused-value', '-Wno-format', '-Wno-format-security', '-Wno-unused-function', '-Wno-unused-variable'], language : 'c')
 
@@ -51,7 +51,18 @@ pfsshell = executable('pfsshell', sources: pfsshell_src, c_args: pfsshell_cflags
 libps2hdd = shared_library('ps2hdd', sources: pfsshell_src, c_args: pfsshell_cflags, link_args: pfsshell_ldflags, dependencies: pfsshell_dependson, install: true)
 
 if get_option('enable_pfsfuse') == true
-libfuse_dep = dependency('fuse')
+
+if host_system == 'windows' and cc.get_id() != 'msvc' and cc.get_id() != 'clang-cl'
+	#Build libdokanfuse using CMake
+	run_command('./dokany.sh')
+	libfuse_include = include_directories(['external/dokany/dokan_fuse/include'])
+	libfuse_dep = cc.find_library('libdokanfuse2.dll',
+               dirs : [meson.current_source_dir() +'/external/dokany/dokan_fuse/build'])
+else
+	libfuse_include = ['']
+	libfuse_dep = dependency('fuse')
+endif
+
 pfsfuse_src = [
 	'iomanx_adapter.c',
 ]
@@ -74,7 +85,7 @@ pfsfuse_dependson = [
 	libiomanX_dep,
 	libfuse_dep,
 ]
-pfsfuse = executable('pfsfuse', sources: pfsfuse_src, c_args: pfsfuse_cflags, link_args: pfsfuse_ldflags, dependencies: pfsfuse_dependson, install: true)
+pfsfuse = executable('pfsfuse', sources: pfsfuse_src, include_directories : libfuse_include, c_args: pfsfuse_cflags, link_args: pfsfuse_ldflags, dependencies: pfsfuse_dependson, install: true)
 endif
 
 if host_system == 'windows' and cc.get_id() != 'msvc' and cc.get_id() != 'clang-cl'
