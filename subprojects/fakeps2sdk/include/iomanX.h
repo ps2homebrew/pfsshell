@@ -2,16 +2,16 @@
 
 #include "irx.h"
 
-#define O_RDONLY 0x0001
-#define O_WRONLY 0x0002
-#define O_RDWR 0x0003
+#define O_RDONLY  0x0001
+#define O_WRONLY  0x0002
+#define O_RDWR    0x0003
 #define O_DIROPEN 0x0008 // Internal use for dopen
-#define O_NBLOCK 0x0010
-#define O_APPEND 0x0100
-#define O_CREAT 0x0200
-#define O_TRUNC 0x0400
-#define O_EXCL 0x0800
-#define O_NOWAIT 0x8000
+#define O_NBLOCK  0x0010
+#define O_APPEND  0x0100
+#define O_CREAT   0x0200
+#define O_TRUNC   0x0400
+#define O_EXCL    0x0800
+#define O_NOWAIT  0x8000
 
 #define SEEK_SET 0
 #define SEEK_CUR 1
@@ -20,11 +20,11 @@
 /* Device drivers.  */
 
 /* Device types.  */
-#define IOP_DT_CHAR 0x01
-#define IOP_DT_CONS 0x02
+#define IOP_DT_CHAR  0x01
+#define IOP_DT_CONS  0x02
 #define IOP_DT_BLOCK 0x04
-#define IOP_DT_RAW 0x08
-#define IOP_DT_FS 0x10
+#define IOP_DT_RAW   0x08
+#define IOP_DT_FS    0x10
 #ifndef IOMAN_NO_EXTENDED
 #define IOP_DT_FSEXT 0x10000000 /* Supports calls after chstat().  */
 #endif
@@ -33,13 +33,13 @@
 #define FIO_CST_MODE 0x0001
 #define FIO_CST_ATTR 0x0002
 #define FIO_CST_SIZE 0x0004
-#define FIO_CST_CT 0x0008
-#define FIO_CST_AT 0x0010
-#define FIO_CST_MT 0x0020
+#define FIO_CST_CT   0x0008
+#define FIO_CST_AT   0x0010
+#define FIO_CST_MT   0x0020
 #define FIO_CST_PRVT 0x0040
 
 // File mode flags
-#define FIO_S_IFMT 0xF000  // Format mask
+#define FIO_S_IFMT  0xF000 // Format mask
 #define FIO_S_IFLNK 0x4000 // Symbolic link
 #define FIO_S_IFREG 0x2000 // Regular file
 #define FIO_S_IFDIR 0x1000 // Directory
@@ -76,7 +76,7 @@ typedef struct _iop_file
     s32 unit;                   /* HW device unit number.  */
     struct _iop_device *device; /* Device driver.  */
     void *privdata;             /* The device driver can use this however it
-				   wants.  */
+                   wants.  */
 } iop_file_t;
 
 typedef struct _iop_device
@@ -89,32 +89,32 @@ typedef struct _iop_device
 } iop_device_t;
 
 
-#define open iomanx_open
-#define close iomanx_close
-#define read iomanx_read
-#define write iomanx_write
-#define lseek iomanx_lseek
-#define ioctl iomanx_ioctl
-#define remove iomanx_remove
-#define mkdir iomanx_mkdir
-#define rmdir iomanx_rmdir
-#define dopen iomanx_dopen
-#define dclose iomanx_dclose
-#define dread iomanx_dread
+#define open    iomanx_open
+#define close   iomanx_close
+#define read    iomanx_read
+#define write   iomanx_write
+#define lseek   iomanx_lseek
+#define ioctl   iomanx_ioctl
+#define remove  iomanx_remove
+#define mkdir   iomanx_mkdir
+#define rmdir   iomanx_rmdir
+#define dopen   iomanx_dopen
+#define dclose  iomanx_dclose
+#define dread   iomanx_dread
 #define getstat iomanx_getstat
-#define chstat iomanx_chstat
+#define chstat  iomanx_chstat
 
-#define format iomanx_format
-#define rename iomanx_rename
-#define chdir iomanx_chdir
-#define sync iomanx_sync
-#define mount iomanx_mount
-#define umount iomanx_umount
-#define lseek64 iomanx_lseek64
-#define devctl iomanx_devctl
-#define symlink iomanx_symlink
+#define format   iomanx_format
+#define rename   iomanx_rename
+#define chdir    iomanx_chdir
+#define sync     iomanx_sync
+#define mount    iomanx_mount
+#define umount   iomanx_umount
+#define lseek64  iomanx_lseek64
+#define devctl   iomanx_devctl
+#define symlink  iomanx_symlink
 #define readlink iomanx_readlink
-#define ioctl2 iomanx_ioctl2
+#define ioctl2   iomanx_ioctl2
 
 
 typedef struct _iop_device_ops
@@ -194,7 +194,7 @@ void StdioInit(int mode);
 
 
 // Access flags for filesystem mount
-#define FIO_MT_RDWR 0x00
+#define FIO_MT_RDWR   0x00
 #define FIO_MT_RDONLY 0x01
 
 #define IOMANX_SEEK_SET 0
@@ -202,7 +202,7 @@ void StdioInit(int mode);
 #define IOMANX_SEEK_END 2
 
 // File mode flags (for mode in io_stat_t)
-#define FIO_SO_IFMT 0x0038  // Format mask
+#define FIO_SO_IFMT  0x0038 // Format mask
 #define FIO_SO_IFLNK 0x0008 // Symbolic link
 #define FIO_SO_IFREG 0x0010 // Regular file
 #define FIO_SO_IFDIR 0x0020 // Directory
