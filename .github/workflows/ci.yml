@@ -106,23 +106,6 @@ jobs:
           name: pfsshell-win32
           path: build/*.7z
 
-      - name: Build pfsfuse
-        continue-on-error: true
-        run: |
-          rm -rf build/
-          meson setup build/ -Denable_pfsfuse=true --cross-file ./external/meson_toolchains/mingw32_meson.ini
-          meson compile -C build
-          cp -f external/dokany/license.lgpl.txt build/
-
-      - uses: actions/upload-artifact@master
-        continue-on-error: true
-        with:
-          name: pfsfuse-win32
-          path: |
-            build/pfsfuse.exe
-            build/libdokanfuse*.dll
-            build/license.lgpl.txt
-
   build-pfsfuse-win32:
     runs-on: windows-latest
     defaults:

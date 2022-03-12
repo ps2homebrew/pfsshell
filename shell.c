@@ -306,7 +306,6 @@ static int do_mkpart(context_t *ctx, int arg, char *argv[])
             return (-1);
         } else if (strcmp(argv[3], fsType[j]) == 0) {
             sprintf(part_type, "%s", fsType[j]);
-            part_type[strlen(fsType[j])] = '\0';
             break;
         }
     }
