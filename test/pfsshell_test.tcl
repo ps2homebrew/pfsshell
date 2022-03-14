@@ -81,7 +81,7 @@ __sysconf/\r
 __common/\r
 # "
 
-run_cmd "mkpart" "mkpart PP.TEST 128M" "-exact" "# "
+run_cmd "mkpart" "mkpart PP.TEST 128M PFS" "-exact" "# "
 run_cmd "mkpart" "ls" "-exact" "
 __mbr\r
 __net/\r

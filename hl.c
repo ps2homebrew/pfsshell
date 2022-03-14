@@ -175,6 +175,8 @@ int lspart(int lsmode)
 #endif
         int result;
         iox_dirent_t dirent;
+        if (lsmode == 1)
+            printf("Start (sector)  Code      Size         Timestamp  Name\n");
         while ((result = iomanx_dread(dh, &dirent)) && result != -1) {
 
             // Equal to, but avoids overflows of: size * 512 / 1024 / 1024;
@@ -201,8 +203,8 @@ int lspart(int lsmode)
                 printf("%s%s\n",
                        dirent.name, end_symbol);
             else if (lsmode == 1)
-                printf("0x%04x %7uMB  %s  %s%s\n",
-                       dirent.stat.mode, size, mod_time, dirent.name, end_symbol);
+                printf("%#8x        %04X %7uMB  %s  %s%s\n",
+                       dirent.stat.private_5, dirent.stat.mode, size, mod_time, dirent.name, end_symbol);
         }
 
         result = iomanx_close(dh);
@@ -252,10 +254,10 @@ int ls(const char *mount_point, const char *path)
 
 
 /* create PFS onto an existing partition */
-int mkfs(const char *mount_point)
+int mkpfs(const char *mount_point)
 {
 #define PFS_ZONE_SIZE 8192
-#define PFS_FRAGMENT 0x00000000
+#define PFS_FRAGMENT  0x00000000
     int format_arg[] = {PFS_ZONE_SIZE, 0x2d66, PFS_FRAGMENT};
 
     char tmp[256];
@@ -266,8 +268,7 @@ int mkfs(const char *mount_point)
 }
 
 
-/* create partition and format it as PFS;
- * so far the only sizes supported are powers of 2 */
+/* create partition of any type and format it as PFS if type=0x0100 */
 int mkpart(const char *mount_point, long size_in_mb, int format)
 {
     char tmp[256];
@@ -280,7 +281,7 @@ int mkpart(const char *mount_point, long size_in_mb, int format)
         iomanx_close(result), result = 0;
 
         if (format)
-            result = mkfs(mount_point);
+            result = mkpfs(mount_point);
     }
     return (result);
 }
@@ -292,10 +293,10 @@ int initialize(void)
 {
     int result = iomanx_format("hdd0:", NULL, NULL, 0);
     if (result >= 0) {
-        result = mkfs("__net");
-        mkfs("__system");
-        mkfs("__sysconf");
-        mkfs("__common");
+        result = mkpfs("__net");
+        mkpfs("__system");
+        mkpfs("__sysconf");
+        mkpfs("__common");
     }
     return (result);
 }

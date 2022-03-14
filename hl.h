@@ -14,12 +14,12 @@ int ls(const char *mount_point, const char *path);
 int lspart(int lsmode);
 
 /* create PFS onto an existing partition */
-int mkfs(const char *mount_point);
+int mkpfs(const char *mount_point);
 
-/* create partition and (optionally) format it as PFS;
+/* create partition of any type and format it as PFS if type=0x0100;
  * so far the only sizes supported are powers of 2 */
 int mkpart(const char *mount_point, long size_in_mb, int format);
 
 /* initialize PS2 HDD with APA partitioning and create common partitions
- * (__mbr, __common, __net, etc.); common partitions are not PFS-formatted */
+ * (__mbr, __common, __net, etc.) */
 int initialize(void);

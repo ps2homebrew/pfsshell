@@ -102,10 +102,12 @@ static int fioGetInput(const char *arg, apa_params_t *params)
     char argBuf[32];
     int rv = 0, i;
     static const struct apaFsType fsTypes[] = {
+        {"MBR", APA_TYPE_MBR},
+        {"EXT2SWAP", APA_TYPE_EXT2SWAP},
+        {"EXT2", APA_TYPE_EXT2},
+        {"REISER", APA_TYPE_REISER},
         {"PFS", APA_TYPE_PFS},
         {"CFS", APA_TYPE_CFS},
-        {"EXT2", APA_TYPE_EXT2},
-        {"EXT2SWAP", APA_TYPE_EXT2SWAP},
         {"HDL", APA_TYPE_HDL}};
 
     if (params == NULL)
@@ -152,14 +154,14 @@ static int fioGetInput(const char *arg, apa_params_t *params)
     if ((rv = fioInputBreaker(&arg, argBuf, sizeof(argBuf))) != 0)
         return rv;
 
-    for (i = 0; i < 5; i++) {
+    for (i = 0; i < 7; i++) {
         if (!strcmp(argBuf, fsTypes[i].desc)) {
             params->type = fsTypes[i].type;
             break;
         }
     }
 
-    if (i == 5) {
+    if (i == 7) {
         printf("hdd: error: Invalid fstype, %s.\n", argBuf);
         return -EINVAL;
     }
@@ -653,8 +655,8 @@ int hddDread(iop_file_t *f, iox_dirent_t *dirent)
             apa_cache_t *cmain = apaCacheGetHeader(f->unit, clink->header->main, APA_IO_MODE_READ, &rv);
             if (cmain != NULL) {
                 /*	This was the SONY original, which didn't do bounds-checking:
-				rv=strlen(cmain->header->id);
-				strcpy(dirent->name, cmain->header->id); */
+                rv=strlen(cmain->header->id);
+                strcpy(dirent->name, cmain->header->id); */
                 strncpy(dirent->name, cmain->header->id, APA_IDMAX);
                 dirent->name[APA_IDMAX] = '\0';
                 rv = strlen(dirent->name);
@@ -663,8 +665,8 @@ int hddDread(iop_file_t *f, iox_dirent_t *dirent)
             }
         } else {
             /*	This was the SONY original, which didn't do bounds-checking:
-			rv=strlen(clink->header->id);
-			strcpy(dirent->name, clink->header->id); */
+            rv=strlen(clink->header->id);
+            strcpy(dirent->name, clink->header->id); */
             strncpy(dirent->name, clink->header->id, APA_IDMAX);
             dirent->name[APA_IDMAX] = '\0';
             rv = strlen(dirent->name);
@@ -681,10 +683,10 @@ int hddDread(iop_file_t *f, iox_dirent_t *dirent)
 }
 
 /*	Originally, SONY provided no function for renaming partitions.
-	Syntax:	rename <Old ID>,<fpwd> <New ID>,<fpwd>
+    Syntax:	rename <Old ID>,<fpwd> <New ID>,<fpwd>
 
-	The full-access password (fpwd) is required.
-	System partitions (__*) cannot be renamed.	*/
+    The full-access password (fpwd) is required.
+    System partitions (__*) cannot be renamed.	*/
 int hddReName(iop_file_t *f, const char *oldname, const char *newname)
 {
     apa_params_t oldParams;
@@ -878,7 +880,7 @@ static int devctlSwapTemp(s32 device, char *argp)
             memcpy(partTemp->header->id, partNew->header->id, APA_IDMAX);
             memcpy(partTemp->header->rpwd, partNew->header->rpwd, APA_PASSMAX);
             memcpy(partTemp->header->fpwd, partNew->header->fpwd, APA_PASSMAX);
-            //memset(partNew->header->id, 0, 8);// BUG! can make it so can not open!!
+            // memset(partNew->header->id, 0, 8);// BUG! can make it so can not open!!
             memset(partNew->header->id, 0, APA_IDMAX);
             strcpy(partNew->header->id, "_tmp");
             memset(partNew->header->rpwd, 0, APA_PASSMAX);

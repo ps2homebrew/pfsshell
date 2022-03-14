@@ -206,10 +206,10 @@ static int do_initialize(context_t *ctx, int argc, char *argv[])
     } else {
         int result = iomanx_format("hdd0:", NULL, NULL, 0);
         if (result >= 0) {
-            result = mkfs("__net");
-            mkfs("__system");
-            mkfs("__sysconf");
-            mkfs("__common");
+            result = mkpfs("__net");
+            mkpfs("__system");
+            mkpfs("__sysconf");
+            mkpfs("__common");
         }
         if (result < 0)
             fprintf(stderr, "(!) format: %s.\n", strerror(-result));
@@ -218,7 +218,7 @@ static int do_initialize(context_t *ctx, int argc, char *argv[])
 }
 
 /*
-static int do_mkfs(context_t *ctx, int argc, char *argv[])
+static int do_mkpfs(context_t *ctx, int argc, char *argv[])
 {
 #define PFS_ZONE_SIZE 8192
 #define PFS_FRAGMENT 0x00000000
@@ -234,6 +234,8 @@ static int do_mkfs(context_t *ctx, int argc, char *argv[])
     return (result);
 }
 */
+
+/* PFS, CFS, HDL, REISER, EXT2, EXT2SWAP, MBR */
 
 static int do_mkpart(context_t *ctx, int arg, char *argv[])
 {
@@ -260,10 +262,20 @@ static int do_mkpart(context_t *ctx, int arg, char *argv[])
         16384,
         32768};
 
+    static char *fsType[7] = {
+        "MBR",
+        "EXT2SWAP",
+        "EXT2",
+        "REISER",
+        "PFS",
+        "CFS",
+        "HDL"};
+
     unsigned int size_in_mb = 0;
 
     char tmp[128];
     char openString[32 + 5];
+    char part_type[9];
     int i = 9;
     int result = -1;
     int partfd = 0;
@@ -271,7 +283,6 @@ static int do_mkpart(context_t *ctx, int arg, char *argv[])
     sprintf(openString, "hdd0:%s", argv[1]);
     openString[32 + 5 - 1] = '\0';
     partfd = iomanx_open(openString, IOMANX_O_RDONLY);
-    printf("iomanx_open %d\n", partfd);
     if (partfd != -2) // partition already exists+
     {
         iomanx_close(partfd);
@@ -286,14 +297,24 @@ static int do_mkpart(context_t *ctx, int arg, char *argv[])
         argv[2][strlen(argv[2]) - 1] = '\0';
         size_in_mb = strtoul(argv[2], NULL, 10) * 1024;
     } else {
-        fprintf(stderr, "%s: invalid partition size.\n", argv[2]);
+        fprintf(stderr, "%s: Partition size should end with literal M or G.\n", argv[2]);
         return (-1);
+    }
+    for (size_t j = 0; j < 8; j++) {
+        if (j == 7) {
+            fprintf(stderr, "%s: wrong fs type. Acceptable fs types: {PFS, CFS, HDL, REISER, EXT2, EXT2SWAP, MBR}.\n", argv[3]);
+            return (-1);
+        } else if (strcmp(argv[3], fsType[j]) == 0) {
+            sprintf(part_type, "%s", fsType[j]);
+            break;
+        }
     }
 
     while (result < 0 && i > 0) { // create main partition
         i--;
         if (sizesMB[i] <= size_in_mb) {
-            sprintf(tmp, "hdd0:%s,,,%s,PFS", argv[1], sizesString[i]);
+            sprintf(tmp, "hdd0:%s,,,%s,%s", argv[1], sizesString[i], part_type);
+
             partfd = iomanx_open(tmp, IOMANX_O_RDWR | IOMANX_O_CREAT);
             if (partfd >= 0) {
                 printf("Main partition of %s created.\n", sizesString[i]);
@@ -324,7 +345,8 @@ static int do_mkpart(context_t *ctx, int arg, char *argv[])
     if (result >= 0) {
         (void)iomanx_close(partfd), result = 0;
         if (result >= 0)
-            result = mkfs(argv[1]);
+            if (strncmp(part_type, "PFS", 3) == 0)
+                result = mkpfs(argv[1]);
     }
 
     if (result < 0)
@@ -581,8 +603,10 @@ static int do_help(context_t *ctx, int argc, char *argv[])
         "lcd [path] - print/change the local working directory\n"
         "device <device> - use this PS2 HDD;\n"
         "initialize - blank and create APA/PFS on a new PS2 HDD (destructive);\n"
-        "mkpart <part_name> <size> - create a new PFS formatted partition;\n"
+        "mkpart <part_name> <size> <fstype> - create a new PFS formatted partition;\n"
         "\tSize must end with M or G literal (like 384M or 3G);\n"
+        "\tAcceptable fs types: {PFS, CFS, HDL, REISER, EXT2, EXT2SWAP, MBR};\n"
+        "\tOnly fs type PFS will format partition, other partitions should be formatted by another utilities;\n"
         "mount <part_name> - mount a partition;\n"
         "umount - un-mount a partition;\n"
         "ls [-l] - no mount: list partitions; mount: list files/dirs;\n"
@@ -619,8 +643,8 @@ static int exec(void *data, int argc, char *argv[])
         {"device", 1, need_no_device, &do_device},
         {"initialize", 0, need_device + need_no_mount, &do_initialize},
         {"initialize", 1, need_device + need_no_mount, &do_initialize},
-        {"mkpart", 2, need_device, &do_mkpart},
-        /* {"mkfs", 1, need_device, &do_mkfs}, */
+        {"mkpart", 3, need_device, &do_mkpart},
+        /* {"mkpfs", 1, need_device, &do_mkpfs}, */
         {"mount", 1, need_device + need_no_mount, &do_mount},
         {"umount", 0, need_device + need_mount, &do_umount},
         {"ls", 0, need_device, &do_ls},

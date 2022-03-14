@@ -2,12 +2,12 @@
 #define _APA_OPT_H
 
 #define APA_PRINTF(format, ...) printf(format, ##__VA_ARGS__)
-#define APA_DRV_NAME "hdd"
+#define APA_DRV_NAME            "hdd"
 
 #if 1
-#define APA_STAT_RETURN_PART_LBA 1
+#define APA_STAT_RETURN_PART_LBA   1
 #define APA_FORMAT_MAKE_PARTITIONS 1
-#define APA_FORMAT_LOCK_MBR 1
+#define APA_FORMAT_LOCK_MBR        1
 #else
 /*	Define APA_OSD_VER in your Makefile to build an OSD version, which will:
         1. (currently disabled) When formatting, do not create any partitions
@@ -20,12 +20,12 @@
 
 #ifdef APA_OSD_VER
 #define APA_STAT_RETURN_PART_LBA 1
-#define APA_FORMAT_LOCK_MBR 1
+#define APA_FORMAT_LOCK_MBR      1
 #define APA_FORMAT_MAKE_PARTITIONS \
     1 // For now, define this because I don't think we're ready (and want to) deal \
         // with the official passwords.
 #else
-#define APA_ENABLE_PASSWORDS 1
+#define APA_ENABLE_PASSWORDS       1
 #define APA_FORMAT_MAKE_PARTITIONS 1
 #endif
 #endif

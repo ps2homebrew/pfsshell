@@ -112,7 +112,7 @@ apa_cache_t *hddAddPartitionHere(s32 device, const apa_params_t *params, u32 *em
     tmp = some_size ? params->size - some_size : 0;
 
     if (hddDevices[device].totalLBA < (part_end + params->size + tmp)
-        //Non-SONY: when dealing with large disks, this check may overflow (therefore, check for overflows!).
+        // Non-SONY: when dealing with large disks, this check may overflow (therefore, check for overflows!).
         || (part_end < sector)) {
         *err = -ENOSPC;
         apaCacheFree(clink_this);
