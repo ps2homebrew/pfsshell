@@ -14,6 +14,9 @@
 
 #include <types.h>
 
+#ifndef ELOOP
+#define ELOOP 92
+#endif
 // General constants
 #define PFS_BLOCKSIZE 0x2000
 #define PFS_SUPER_MAGIC 0x50465300    // "PFS\0" aka Playstation Filesystem

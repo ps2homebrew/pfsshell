@@ -17,6 +17,9 @@
 #include <string.h>
 #endif
 #include <errno.h>
+#ifndef ELOOP
+#define ELOOP 92
+#endif
 #include <iomanX.h>
 #include <thsemap.h>
 #include <hdd-ioctl.h>

@@ -15,6 +15,9 @@
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
+#ifndef ELOOP
+#define ELOOP 92
+#endif
 ///////////////////////////////////////////////////////////////////////////////
 //   Global types
 
