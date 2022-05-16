@@ -72,18 +72,13 @@ jobs:
           path: build/pfsfuse
 
   build-win32:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
+    container: dockcross/windows-static-x86:latest
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
-      
-      - name: dea
-        run: |
-          sudo apt-get update
-          sudo apt-get install build-essential mingw-w64
-          sudo update-alternatives --set i686-w64-mingw32-gcc /usr/bin/i686-w64-mingw32-gcc-posix
-          sudo update-alternatives --set i686-w64-mingw32-g++ /usr/bin/i686-w64-mingw32-g++-posix
+
 
       - name: compile subprojects
         run: |
