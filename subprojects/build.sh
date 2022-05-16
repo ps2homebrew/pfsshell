@@ -8,5 +8,9 @@ for d in */ ; do
 	cd build/
 	cmake ..
 	cmake --build .
+	cd ..
+	cd ..
 	echo "$d ---------------------------------------------------------"
 done
+
+dir -R
