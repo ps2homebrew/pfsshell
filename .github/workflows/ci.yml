@@ -79,21 +79,21 @@ jobs:
           submodules: recursive
       
       - name: dea
-      - run: |
+        run: |
           sudo apt-get update
           sudo apt-get install build-essential mingw-w64
           sudo update-alternatives --set i686-w64-mingw32-gcc /usr/bin/i686-w64-mingw32-gcc-posix
           sudo update-alternatives --set i686-w64-mingw32-g++ /usr/bin/i686-w64-mingw32-g++-posix
 
       - name: compile subprojects
-      - run: |
+        run: |
           cd subprojects
           chmod +x ./build.sh
           ./build.sh
 
 
       - name: compile subprojects
-      - run: |
+        run: |
           cd subprojects
           chmod +x ./build.sh
           ./build.sh
