@@ -100,7 +100,7 @@ jobs:
 
 
       - name: compile
-      - run: |
+        run: |
           rm -rf build/
           mkdir build
           cd build
