@@ -86,14 +86,6 @@ jobs:
           chmod +x ./build.sh
           ./build.sh
 
-
-      - name: compile subprojects
-        run: |
-          cd subprojects
-          chmod +x ./build.sh
-          ./build.sh
-
-
       - name: compile
         run: |
           rm -rf build/
