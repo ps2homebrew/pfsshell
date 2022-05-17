@@ -99,7 +99,7 @@ jobs:
           rm -rf build/
           mkdir build
           cd build
-          cmake -DDEFINE_MACRO=ON ..
+          cmake -DNEED_GETLINE=ON ..
           cmake --build .
 
       - name: upload
