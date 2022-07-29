@@ -256,7 +256,7 @@ int hddDeinit(iop_device_t *f)
     return 0;
 }
 
-int hddFormat(iop_file_t *f, const char *dev, const char *blockdev, void *arg, size_t arglen)
+int hddFormat(iop_file_t *f, const char *dev, const char *blockdev, void *arg, int arglen)
 {
     int rv = 0;
     apa_cache_t *clink;
@@ -794,8 +794,8 @@ static int ioctl2DeleteLastSub(hdd_file_slot_t *fileSlot)
     return rv;
 }
 
-int hddIoctl2(iop_file_t *f, int req, void *argp, size_t arglen,
-              void *bufp, size_t buflen)
+int hddIoctl2(iop_file_t *f, int req, void *argp, unsigned int arglen,
+              void *bufp, unsigned int buflen)
 {
     u32 rv = 0, err_lba;
     hdd_file_slot_t *fileSlot = f->privdata;
@@ -913,7 +913,7 @@ static int devctlSetOsdMBR(s32 device, hddSetOsdMBR_t *mbrInfo)
 }
 
 int hddDevctl(iop_file_t *f, const char *devname, int cmd, void *arg,
-              size_t arglen, void *bufp, size_t buflen)
+              unsigned int arglen, void *bufp, unsigned int buflen)
 {
     int rv = 0;
 

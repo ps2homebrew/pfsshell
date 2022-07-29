@@ -26,7 +26,7 @@ void pfsFioCloseFileSlot(pfs_file_slot_t *fileSlot);
 
 int pfsFioInit(iop_device_t *f);
 int pfsFioDeinit(iop_device_t *f);
-int pfsFioFormat(iop_file_t *, const char *dev, const char *blockdev, void *arg, size_t arglen);
+int pfsFioFormat(iop_file_t *, const char *dev, const char *blockdev, void *arg, int arglen);
 int pfsFioOpen(iop_file_t *f, const char *name, int flags, int mode);
 int pfsFioClose(iop_file_t *f);
 int pfsFioRead(iop_file_t *f, void *buf, int size);

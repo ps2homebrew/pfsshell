@@ -490,7 +490,7 @@ int pfsFioDeinit(iop_device_t *f)
     return 0;
 }
 
-int pfsFioFormat(iop_file_t *t, const char *dev, const char *blockdev, void *args, size_t arglen)
+int pfsFioFormat(iop_file_t *t, const char *dev, const char *blockdev, void *args, int arglen)
 {
     int *arg = (int *)args;
     int fragment = 0;

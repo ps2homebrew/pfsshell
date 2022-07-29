@@ -168,36 +168,35 @@ typedef struct
 /* open() takes an optional mode argument.  */
 int iomanx_open(const char *name, int flags, ...);
 int iomanx_close(int fd);
-int iomanx_read(int fd, void *ptr, size_t size);
-int iomanx_write(int fd, void *ptr, size_t size);
+int iomanx_read(int fd, void *ptr, int size);
+int iomanx_write(int fd, void *ptr, int size);
 int iomanx_lseek(int fd, int offset, int mode);
 
-int iomanx_ioctl(int fd, unsigned long cmd, void *param);
+int iomanx_ioctl(int fd, int cmd, void *param);
 int iomanx_remove(const char *name);
 
-/* mkdir() takes an optional mode argument.  */
-int iomanx_mkdir(const char *path, ...);
+int iomanx_mkdir(const char *path, int mode);
 int iomanx_rmdir(const char *path);
 int iomanx_dopen(const char *path);
 int iomanx_dclose(int fd);
-int iomanx_dread(int fd, void *buf);
+int iomanx_dread(int fd, iox_dirent_t *buf);
 
-int iomanx_getstat(const char *name, void *stat);
-int iomanx_chstat(const char *name, void *stat, unsigned int statmask);
+int iomanx_getstat(const char *name, iox_stat_t *stat);
+int iomanx_chstat(const char *name, iox_stat_t *stat, unsigned int statmask);
 
-/* This can take take more than one form.  */
-int iomanx_format(const char *dev, const char *blockdev, void *arg, size_t arglen);
+/** This can take take more than one form.  */
+int iomanx_format(const char *dev, const char *blockdev, void *arg, int arglen);
 
 /* The newer calls - these are NOT supported by the older IOMAN.  */
 int iomanx_rename(const char *old, const char *new);
 int iomanx_chdir(const char *name);
 int iomanx_sync(const char *dev, int flag);
-int iomanx_mount(const char *fsname, const char *devname, int flag, void *arg, size_t arglen);
+int iomanx_mount(const char *fsname, const char *devname, int flag, void *arg, int arglen);
 int iomanx_umount(const char *fsname);
-int iomanx_lseek64(int fd, long long offset, int whence);
-int iomanx_devctl(const char *name, int cmd, void *arg, size_t arglen, void *buf, size_t buflen);
+int64_t iomanx_lseek64(int fd, int64_t offset, int whence);
+int iomanx_devctl(const char *name, int cmd, void *arg, unsigned int arglen, void *buf, unsigned int buflen);
 int iomanx_symlink(const char *old, const char *new);
-int iomanx_readlink(const char *path, char *buf, size_t buflen);
-int iomanx_ioctl2(int fd, int cmd, void *arg, size_t arglen, void *buf, size_t buflen);
+int iomanx_readlink(const char *path, char *buf, unsigned int buflen);
+int iomanx_ioctl2(int fd, int cmd, void *arg, unsigned int arglen, void *buf, unsigned int buflen);
 
 //const char* strerror (int err);

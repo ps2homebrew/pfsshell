@@ -121,7 +121,7 @@ typedef struct _iop_device_ops
 {
     int (*init)(iop_device_t *);
     int (*deinit)(iop_device_t *);
-    int (*format)(iop_file_t *, const char *, const char *, void *, size_t);
+    int (*format)(iop_file_t *, const char *, const char *, void *, int);
     int (*open)(iop_file_t *, const char *, int, int);
     int (*close)(iop_file_t *);
     int (*read)(iop_file_t *, void *, int);
@@ -145,10 +145,10 @@ typedef struct _iop_device_ops
     int (*mount)(iop_file_t *, const char *, const char *, int, void *, int);
     int (*umount)(iop_file_t *, const char *);
     s64 (*lseek64)(iop_file_t *, s64, int);
-    int (*devctl)(iop_file_t *, const char *, int, void *, size_t, void *, size_t);
+    int (*devctl)(iop_file_t *, const char *, int, void *, unsigned int, void *, unsigned int);
     int (*symlink)(iop_file_t *, const char *, const char *);
     int (*readlink)(iop_file_t *, const char *, char *, unsigned int);
-    int (*ioctl2)(iop_file_t *, int, void *, size_t, void *, size_t);
+    int (*ioctl2)(iop_file_t *, int, void *, unsigned int, void *, unsigned int);
 #endif /* IOMAN_NO_EXTENDED */
 } iop_device_ops_t;
 

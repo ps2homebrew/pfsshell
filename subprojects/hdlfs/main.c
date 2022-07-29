@@ -80,7 +80,7 @@ static int hdlfs_deinit(iop_device_t *fd)
     return 0;
 }
 
-static int hdlfs_format(iop_file_t *fd, const char *device, const char *blockdev, void *args, size_t arglen)
+static int hdlfs_format(iop_file_t *fd, const char *device, const char *blockdev, void *args, int arglen)
 {
     int PartitionFD, result;
     unsigned int i, MaxSectorsPerPart, NumReservedSectors, NumberOfSectors, SectorNumber, SectorsInPart, SectorsRemaining;
@@ -478,7 +478,7 @@ static inline int hdlfs_UpdateGameTitle(int unit, const char *NewName, unsigned 
     return result;
 }
 
-static int hdlfs_devctl(iop_file_t *fd, const char *path, int cmd, void *arg, size_t arglen, void *buf, size_t buflen)
+static int hdlfs_devctl(iop_file_t *fd, const char *path, int cmd, void *arg, unsigned int arglen, void *buf, unsigned int buflen)
 {
     int result;
 
