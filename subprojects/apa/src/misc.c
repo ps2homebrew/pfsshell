@@ -20,11 +20,7 @@
 #else
 #include <string.h>
 #include <time.h>
-#ifdef __APPLE__
-#include <malloc/malloc.h>
-#else
-#include <malloc.h>
-#endif
+#include <stdlib.h>
 #endif
 #include <iomanX.h>
 #include <stdio.h>
