@@ -1,5 +1,8 @@
 #pragma once
 
+// The types here would be included in tamtypes.h, but we restructured the file layout
+#include <sysclib.h>
+
 // apa
 
 // Partition format/types (as returned via the mode field for getstat/dread)
