@@ -15,7 +15,6 @@
 #include <sysclib.h>
 #include <loadcore.h>
 #else
-#include <loadcore.h>
 #include <string.h>
 #include <stdlib.h>
 #endif
