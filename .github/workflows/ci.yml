@@ -160,7 +160,7 @@ jobs:
 
       - run: python -m pip install --upgrade meson ninja
 
-      - run: brew install macfuse truncate
+      - run: brew install macfuse coreutils
 
       - run: |
           meson setup build/
