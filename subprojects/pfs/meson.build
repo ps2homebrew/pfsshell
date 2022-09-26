@@ -24,6 +24,15 @@ libpfs_src = [
 	'src/super.c',
 	'src/superWrite.c'
 ]
-libpfs = static_library('pfs', sources: libpfs_src, include_directories: libpfs_inc, dependencies: libfakeps2sdk_dep)
+libpfs_c_args = [
+	'-DPFS_POSIX_VER'
+]
+libpfs = static_library(
+	'pfs',
+	sources: libpfs_src,
+	include_directories: libpfs_inc,
+	dependencies: libfakeps2sdk_dep,
+	c_args: libpfs_c_args
+)
 
 libpfs_dep = declare_dependency(include_directories: libpfs_inc, link_with: libpfs)

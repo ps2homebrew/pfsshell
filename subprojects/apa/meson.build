@@ -19,6 +19,15 @@ libapa_src = [
 	'src/password.c',
 	'src/free.c'
 ]
-libapa = static_library('apa', sources: libapa_src, include_directories: libapa_inc, dependencies: libfakeps2sdk_dep)
+libapa_c_args = [
+	'-DAPA_POSIX_VER'
+]
+libapa = static_library(
+	'apa',
+	sources: libapa_src,
+	include_directories: libapa_inc,
+	dependencies: libfakeps2sdk_dep,
+	c_args: libapa_c_args
+)
 
 libapa_dep = declare_dependency(include_directories: libapa_inc, link_with: libapa)
