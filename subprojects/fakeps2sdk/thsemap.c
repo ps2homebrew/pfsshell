@@ -27,7 +27,7 @@ int CreateSema(iop_sema_t *sema)
 #ifdef USE_NAMED_SEMAPHORES
         char sema_name_buf[NAME_MAX - 4];
         snprintf(sema_name_buf, sizeof(sema_name_buf), "fakeps2sdk%x_%i", getpid(), i);
-        sem[i] = sem_open((const char *)sema_name_buf, O_CREAT);
+        sem[i] = sem_open((const char *)sema_name_buf, O_CREAT, O_RDWR, 1);
 #else
         sem[i] = (sem_t *)malloc(sizeof(sem_t));
 #endif
