@@ -282,7 +282,7 @@ static int do_mkpart(context_t *ctx, int arg, char *argv[])
 
     sprintf(openString, "hdd0:%s", argv[1]);
     openString[32 + 5 - 1] = '\0';
-    partfd = iomanx_open(openString, IOMANX_O_RDONLY);
+    partfd = iomanx_open(openString, FIO_O_RDONLY);
     if (partfd != -2) // partition already exists+
     {
         iomanx_close(partfd);
@@ -315,7 +315,7 @@ static int do_mkpart(context_t *ctx, int arg, char *argv[])
         if (sizesMB[i] <= size_in_mb) {
             sprintf(tmp, "hdd0:%s,,,%s,%s", argv[1], sizesString[i], part_type);
 
-            partfd = iomanx_open(tmp, IOMANX_O_RDWR | IOMANX_O_CREAT);
+            partfd = iomanx_open(tmp, FIO_O_RDWR | FIO_O_CREAT);
             if (partfd >= 0) {
                 printf("Main partition of %s created.\n", sizesString[i]);
                 size_in_mb = size_in_mb - sizesMB[i];
@@ -484,7 +484,7 @@ static int do_get(context_t *ctx, int argc, char *argv[])
         strcat(tmp, "/");
     strcat(tmp, argv[1]);
 
-    int in = iomanx_open(tmp, IOMANX_O_RDONLY);
+    int in = iomanx_open(tmp, FIO_O_RDONLY);
     if (in >= 0) {
         int out = open(argv[1], O_CREAT | O_WRONLY |
 #ifdef O_BINARY
@@ -532,7 +532,7 @@ static int do_put(context_t *ctx, int argc, char *argv[])
 #endif
     );
     if (in != -1) {
-        int out = iomanx_open(tmp, IOMANX_O_WRONLY | IOMANX_O_CREAT, 0666);
+        int out = iomanx_open(tmp, FIO_O_WRONLY | FIO_O_CREAT, 0666);
         if (out >= 0) {
             char buf[8 * 4096]; /* bigger buffer performs better via network */
             ssize_t len;

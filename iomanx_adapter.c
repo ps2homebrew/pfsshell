@@ -318,34 +318,34 @@ static int iomanx_adapter_open(const char *path, struct fuse_file_info *fi)
     }
     int flags = 0;
     if ((fi->flags & O_ACCMODE) == O_RDONLY) {
-        flags |= IOMANX_O_RDONLY;
+        flags |= FIO_O_RDONLY;
     }
     if ((fi->flags & O_ACCMODE) == O_WRONLY) {
-        flags |= IOMANX_O_WRONLY;
+        flags |= FIO_O_WRONLY;
     }
     if ((fi->flags & O_ACCMODE) == O_RDWR) {
-        flags |= IOMANX_O_RDWR;
+        flags |= FIO_O_RDWR;
     }
 #ifndef _WIN32
     if (fi->flags & O_NONBLOCK) {
-        flags |= IOMANX_O_NBLOCK;
+        flags |= FIO_O_NBLOCK;
     }
 #endif
     if (fi->flags & O_APPEND) {
-        flags |= IOMANX_O_APPEND;
+        flags |= FIO_O_APPEND;
     }
     if (fi->flags & O_CREAT) {
-        flags |= IOMANX_O_CREAT;
+        flags |= FIO_O_CREAT;
     }
     if (fi->flags & O_TRUNC) {
-        flags |= IOMANX_O_TRUNC;
+        flags |= FIO_O_TRUNC;
     }
     if (fi->flags & O_EXCL) {
-        flags |= IOMANX_O_EXCL;
+        flags |= FIO_O_EXCL;
     }
     char translated_path[1024];
     translate_path(translated_path, path, sizeof(translated_path));
-    // not handled: IOMANX_O_DIROPEN, IOMANX_O_NOWAIT
+    // not handled: FIO_O_DIROPEN, FIO_O_NOWAIT
     int fh = iomanx_open(translated_path, flags);
     if (fh < 0) {
         return fh;
@@ -361,34 +361,34 @@ static int iomanx_adapter_create(const char *path, mode_t mode, struct fuse_file
     }
     int flags = 0;
     if ((fi->flags & O_ACCMODE) == O_RDONLY) {
-        flags |= IOMANX_O_RDONLY;
+        flags |= FIO_O_RDONLY;
     }
     if ((fi->flags & O_ACCMODE) == O_WRONLY) {
-        flags |= IOMANX_O_WRONLY;
+        flags |= FIO_O_WRONLY;
     }
     if ((fi->flags & O_ACCMODE) == O_RDWR) {
-        flags |= IOMANX_O_RDWR;
+        flags |= FIO_O_RDWR;
     }
 #ifndef _WIN32
     if (fi->flags & O_NONBLOCK) {
-        flags |= IOMANX_O_NBLOCK;
+        flags |= FIO_O_NBLOCK;
     }
 #endif
     if (fi->flags & O_APPEND) {
-        flags |= IOMANX_O_APPEND;
+        flags |= FIO_O_APPEND;
     }
-    flags |= IOMANX_O_CREAT;
+    flags |= FIO_O_CREAT;
     if (fi->flags & O_TRUNC) {
-        flags |= IOMANX_O_TRUNC;
+        flags |= FIO_O_TRUNC;
     }
     if (fi->flags & O_EXCL) {
-        flags |= IOMANX_O_EXCL;
+        flags |= FIO_O_EXCL;
     }
     char translated_path[1024];
     translate_path(translated_path, path, sizeof(translated_path));
     unsigned int translated_mode = 0;
     convert_mode_to_iomanx(&translated_mode, &mode);
-    // not handled: IOMANX_O_DIROPEN, IOMANX_O_NOWAIT
+    // not handled: FIO_O_DIROPEN, FIO_O_NOWAIT
     int fh = iomanx_open(translated_path, flags, translated_mode);
     if (fh < 0) {
         return fh;
@@ -443,7 +443,7 @@ static int iomanx_adapter_lseek(const char *path, off_t offset,
 static int iomanx_adapter_read(const char *path, char *buf, size_t size, off_t offset,
                                struct fuse_file_info *fi)
 {
-    int res = iomanx_adapter_lseek(path, offset, IOMANX_SEEK_SET, fi);
+    int res = iomanx_adapter_lseek(path, offset, FIO_SEEK_SET, fi);
     if (res < 0) {
         return res;
     }
@@ -454,7 +454,7 @@ static int iomanx_adapter_read(const char *path, char *buf, size_t size, off_t o
 static int iomanx_adapter_write(const char *path, const char *buf, size_t size,
                                 off_t offset, struct fuse_file_info *fi)
 {
-    int res = iomanx_adapter_lseek(path, offset, IOMANX_SEEK_SET, fi);
+    int res = iomanx_adapter_lseek(path, offset, FIO_SEEK_SET, fi);
     if (res < 0) {
         return res;
     }
@@ -582,7 +582,7 @@ static int iomanx_adapter_ftruncate(const char *path, off_t offset,
     // allocate blocks can speed up the process, but needs more implementation
     // int size = offset / 8192;
     // iomanx_ioctl2(fi->fh, PIOCALLOC, &offset, 4, NULL, 0);
-    int res = iomanx_adapter_lseek(path, offset, IOMANX_SEEK_SET, fi);
+    int res = iomanx_adapter_lseek(path, offset, FIO_SEEK_SET, fi);
     if (res < 0) {
         return res;
     }
@@ -806,7 +806,7 @@ int main(int argc, char *argv[])
 
     /* do some stuff for statvfs before mounting */
     totalsectors = 0;
-    int fd = iomanx_open(mount_point, IOMANX_O_RDONLY);
+    int fd = iomanx_open(mount_point, FIO_O_RDONLY);
     int nsub = iomanx_ioctl2(fd, HIOCNSUB, NULL, 0, NULL, 0);
     for (int i = 0; i < nsub + 1; i++) {
         totalsectors += iomanx_ioctl2(fd, HIOCGETSIZE, &i, 4, NULL, 0);

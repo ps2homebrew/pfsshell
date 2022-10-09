@@ -23,7 +23,7 @@ int copyto(const char *mount_point, const char *dest, const char *src)
             strcat(dest_path, dest);
 
             int fh = iomanx_open(dest_path,
-                                 IOMANX_O_WRONLY | IOMANX_O_CREAT, 0666);
+                                 FIO_O_WRONLY | FIO_O_CREAT, 0666);
             if (fh >= 0) {
                 char buf[4096 * 16];
                 int len;
@@ -69,7 +69,7 @@ int copyfrom(const char *mount_point, const char *src, const char *dest)
             strcpy(src_path, "pfs0:");
             strcat(src_path, src);
 
-            int fh = iomanx_open(src_path, IOMANX_O_RDONLY);
+            int fh = iomanx_open(src_path, FIO_O_RDONLY);
             if (fh >= 0) {
                 char buf[4096 * 16];
                 int len;
@@ -276,7 +276,7 @@ int mkpart(const char *mount_point, long size_in_mb, int format)
         sprintf(tmp, "%s,%ldG", mount_point, size_in_mb / 1024);
     else
         sprintf(tmp, "%s,%ldM", mount_point, size_in_mb);
-    int result = iomanx_open(tmp, IOMANX_O_RDWR | IOMANX_O_CREAT, 0);
+    int result = iomanx_open(tmp, FIO_O_RDWR | FIO_O_CREAT, 0);
     if (result >= 0) {
         iomanx_close(result), result = 0;
 

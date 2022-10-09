@@ -197,9 +197,9 @@ void StdioInit(int mode);
 #define FIO_MT_RDWR   0x00
 #define FIO_MT_RDONLY 0x01
 
-#define IOMANX_SEEK_SET 0
-#define IOMANX_SEEK_CUR 1
-#define IOMANX_SEEK_END 2
+#define FIO_SEEK_SET 0
+#define FIO_SEEK_CUR 1
+#define FIO_SEEK_END 2
 
 // File mode flags (for mode in io_stat_t)
 #define FIO_SO_IFMT  0x0038 // Format mask
