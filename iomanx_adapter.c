@@ -582,7 +582,7 @@ static int iomanx_adapter_ftruncate(const char *path, off_t offset,
     // allocate blocks can speed up the process, but needs more implementation
     // int size = offset / 8192;
     // iomanx_ioctl2(fi->fh, PIOCALLOC, &offset, 4, NULL, 0);
-    int res = iomanX_adapter_lseek(path, offset, FIO_SEEK_SET, fi);
+    int res = iomanx_adapter_lseek(path, offset, FIO_SEEK_SET, fi);
     if (res < 0) {
         return res;
     }
