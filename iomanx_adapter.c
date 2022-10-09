@@ -306,7 +306,7 @@ static void *iomanx_adapter_init(struct fuse_conn_info *conn)
 static void iomanx_adapter_destroy(void *private_data)
 {
     (void)private_data;
-    iomanx_umount(IOMANX_MOUNT_POINT);
+    iomanX_umount(IOMANX_MOUNT_POINT);
     extern void atad_close(void); /* fake_sdk/atad.c */
     atad_close();
 }
@@ -346,7 +346,7 @@ static int iomanx_adapter_open(const char *path, struct fuse_file_info *fi)
     char translated_path[1024];
     translate_path(translated_path, path, sizeof(translated_path));
     // not handled: FIO_O_DIROPEN, FIO_O_NOWAIT
-    int fh = iomanx_open(translated_path, flags);
+    int fh = iomanX_open(translated_path, flags);
     if (fh < 0) {
         return fh;
     }
@@ -389,7 +389,7 @@ static int iomanx_adapter_create(const char *path, mode_t mode, struct fuse_file
     unsigned int translated_mode = 0;
     convert_mode_to_iomanx(&translated_mode, &mode);
     // not handled: FIO_O_DIROPEN, FIO_O_NOWAIT
-    int fh = iomanx_open(translated_path, flags, translated_mode);
+    int fh = iomanX_open(translated_path, flags, translated_mode);
     if (fh < 0) {
         return fh;
     }
@@ -405,7 +405,7 @@ static int iomanx_adapter_fsync(const char *path, int isdatasync,
     }
     char translated_path[1024];
     translate_path(translated_path, path, sizeof(translated_path));
-    int res = iomanx_sync(translated_path, isdatasync);
+    int res = iomanX_sync(translated_path, isdatasync);
     if (res < 0) {
         return res;
     }
@@ -418,7 +418,7 @@ static int iomanx_adapter_release(const char *path, struct fuse_file_info *fi)
     if (fi == NULL) {
         return 0;
     }
-    int res = iomanx_close(fi->fh);
+    int res = iomanX_close(fi->fh);
     if (res < 0) {
         return res;
     }
@@ -433,9 +433,9 @@ static int iomanx_adapter_lseek(const char *path, off_t offset,
     if (fi == NULL) {
         return -ENOENT;
     }
-    int res = iomanx_lseek64(fi->fh, offset, whence);
+    int res = iomanX_lseek64(fi->fh, offset, whence);
     if (res == -48) {
-        res = iomanx_lseek(fi->fh, offset, whence);
+        res = iomanX_lseek(fi->fh, offset, whence);
     }
     return res;
 }
@@ -447,7 +447,7 @@ static int iomanx_adapter_read(const char *path, char *buf, size_t size, off_t o
     if (res < 0) {
         return res;
     }
-    res = iomanx_read(fi->fh, buf, size);
+    res = iomanX_read(fi->fh, buf, size);
     return res;
 }
 
@@ -458,19 +458,19 @@ static int iomanx_adapter_write(const char *path, const char *buf, size_t size,
     if (res < 0) {
         return res;
     }
-    res = iomanx_write(fi->fh, (void *)buf, size);
+    res = iomanX_write(fi->fh, (void *)buf, size);
     return res;
 }
 
 static int iomanx_adapter_statfs(const char *path, struct statvfs *buf)
 {
     (void)path;
-    buf->f_bsize = buf->f_frsize = iomanx_devctl(IOMANX_MOUNT_POINT, PDIOC_ZONESZ, NULL, 0, NULL, 0);
+    buf->f_bsize = buf->f_frsize = iomanX_devctl(IOMANX_MOUNT_POINT, PDIOC_ZONESZ, NULL, 0, NULL, 0);
     if (buf->f_bsize < 0) {
         return buf->f_bsize;
     }
     buf->f_blocks = totalsectors / (buf->f_frsize / 512);
-    buf->f_bfree = buf->f_bavail = iomanx_devctl(IOMANX_MOUNT_POINT, PDIOC_ZONEFREE, NULL, 0, NULL, 0);
+    buf->f_bfree = buf->f_bavail = iomanX_devctl(IOMANX_MOUNT_POINT, PDIOC_ZONEFREE, NULL, 0, NULL, 0);
     if (buf->f_bfree < 0) {
         return buf->f_bfree;
     }
@@ -488,7 +488,7 @@ static int iomanx_adapter_unlink(const char *path)
     char translated_path[1024];
     translate_path(translated_path, path, sizeof(translated_path));
 
-    res = iomanx_remove(translated_path);
+    res = iomanX_remove(translated_path);
     if (res < 0) {
         return res;
     }
@@ -506,7 +506,7 @@ static int iomanx_adapter_mkdir(const char *path, mode_t mode)
     unsigned int translated_mode = 0;
     convert_mode_to_iomanx(&translated_mode, &mode);
 
-    res = iomanx_mkdir(translated_path, translated_mode);
+    res = iomanX_mkdir(translated_path, translated_mode);
     if (res < 0) {
         return res;
     }
@@ -521,7 +521,7 @@ static int iomanx_adapter_rmdir(const char *path)
     char translated_path[1024];
     translate_path(translated_path, path, sizeof(translated_path));
 
-    res = iomanx_rmdir(translated_path);
+    res = iomanX_rmdir(translated_path);
     if (res < 0) {
         return res;
     }
@@ -542,19 +542,19 @@ static int iomanx_adapter_readdir(const char *path, void *buf, fuse_fill_dir_t f
     char translated_path[1024];
     translate_path(translated_path, path, sizeof(translated_path));
 
-    dp = iomanx_dopen(translated_path);
+    dp = iomanX_dopen(translated_path);
     if (dp < 0) {
         return dp;
     }
 
-    while ((res = iomanx_dread(dp, &de)) && (res != -1)) {
+    while ((res = iomanX_dread(dp, &de)) && (res != -1)) {
         struct pfsfuse_stat st;
         convert_stat_to_posix(&st, &(de.stat));
         if (filler(buf, de.name, &st, 0))
             break;
     }
 
-    iomanx_close(dp);
+    iomanX_close(dp);
     return res;
 }
 
@@ -567,7 +567,7 @@ static int iomanx_adapter_getattr(const char *path, struct pfsfuse_stat *stbuf)
     char translated_path[1024];
     translate_path(translated_path, path, sizeof(translated_path));
 
-    res = iomanx_getstat(translated_path, &iomanx_stat);
+    res = iomanX_getstat(translated_path, &iomanx_stat);
     if (res < 0) {
         return res;
     }
@@ -582,7 +582,7 @@ static int iomanx_adapter_ftruncate(const char *path, off_t offset,
     // allocate blocks can speed up the process, but needs more implementation
     // int size = offset / 8192;
     // iomanx_ioctl2(fi->fh, PIOCALLOC, &offset, 4, NULL, 0);
-    int res = iomanx_adapter_lseek(path, offset, FIO_SEEK_SET, fi);
+    int res = iomanX_adapter_lseek(path, offset, FIO_SEEK_SET, fi);
     if (res < 0) {
         return res;
     }
@@ -600,7 +600,7 @@ static int iomanx_adapter_chmod(const char *path, mode_t mode)
     char translated_path[1024];
     translate_path(translated_path, path, sizeof(translated_path));
 
-    res = iomanx_chstat(translated_path, &iomanx_stat, FIO_CST_MODE);
+    res = iomanX_chstat(translated_path, &iomanx_stat, FIO_CST_MODE);
     if (res < 0) {
         return res;
     }
@@ -618,7 +618,7 @@ static int iomanx_adapter_utimens(const char *path, const struct timespec ts[2])
     char translated_path[1024];
     translate_path(translated_path, path, sizeof(translated_path));
 
-    res = iomanx_chstat(translated_path, &iomanx_stat, FIO_CST_AT | FIO_CST_MT);
+    res = iomanX_chstat(translated_path, &iomanx_stat, FIO_CST_AT | FIO_CST_MT);
     if (res < 0) {
         return res;
     }
@@ -636,7 +636,7 @@ static int iomanx_adapter_rename(const char *from, const char *to)
     char translated_to[1024];
     translate_path(translated_to, to, sizeof(translated_to));
 
-    res = iomanx_rename(translated_from, translated_to);
+    res = iomanX_rename(translated_from, translated_to);
     if (res < 0) {
         return res;
     }
@@ -654,7 +654,7 @@ static int iomanx_adapter_symlink(const char *from, const char *to)
     char translated_to[1024];
     translate_path(translated_to, to, sizeof(translated_to));
 
-    res = iomanx_symlink(translated_from, translated_to);
+    res = iomanX_symlink(translated_from, translated_to);
     if (res < 0) {
         return res;
     }
@@ -669,7 +669,7 @@ static int iomanx_adapter_readlink(const char *path, char *buf, size_t size)
     char translated_path[1024];
     translate_path(translated_path, path, sizeof(translated_path));
 
-    res = iomanx_readlink(translated_path, buf, size - 1);
+    res = iomanX_readlink(translated_path, buf, size - 1);
     if (res < 0) {
         return res;
     }
@@ -806,14 +806,14 @@ int main(int argc, char *argv[])
 
     /* do some stuff for statvfs before mounting */
     totalsectors = 0;
-    int fd = iomanx_open(mount_point, FIO_O_RDONLY);
-    int nsub = iomanx_ioctl2(fd, HIOCNSUB, NULL, 0, NULL, 0);
+    int fd = iomanX_open(mount_point, FIO_O_RDONLY);
+    int nsub = iomanX_ioctl2(fd, HIOCNSUB, NULL, 0, NULL, 0);
     for (int i = 0; i < nsub + 1; i++) {
-        totalsectors += iomanx_ioctl2(fd, HIOCGETSIZE, &i, 4, NULL, 0);
+        totalsectors += iomanX_ioctl2(fd, HIOCGETSIZE, &i, 4, NULL, 0);
     }
-    iomanx_close(fd);
+    iomanX_close(fd);
 
-    result = iomanx_mount(IOMANX_MOUNT_POINT, mount_point, 0, NULL, 0);
+    result = iomanX_mount(IOMANX_MOUNT_POINT, mount_point, 0, NULL, 0);
     if (result < 0) {
         fprintf(stderr, "(!) %s: %s.\n", mount_point, strerror(-result));
         return 1;

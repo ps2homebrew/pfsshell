@@ -89,32 +89,32 @@ typedef struct _iop_device
 } iop_device_t;
 
 
-#define open    iomanx_open
-#define close   iomanx_close
-#define read    iomanx_read
-#define write   iomanx_write
-#define lseek   iomanx_lseek
-#define ioctl   iomanx_ioctl
-#define remove  iomanx_remove
-#define mkdir   iomanx_mkdir
-#define rmdir   iomanx_rmdir
-#define dopen   iomanx_dopen
-#define dclose  iomanx_dclose
-#define dread   iomanx_dread
-#define getstat iomanx_getstat
-#define chstat  iomanx_chstat
+#define open    iomanX_open
+#define close   iomanX_close
+#define read    iomanX_read
+#define write   iomanX_write
+#define lseek   iomanX_lseek
+#define ioctl   iomanX_ioctl
+#define remove  iomanX_remove
+#define mkdir   iomanX_mkdir
+#define rmdir   iomanX_rmdir
+#define dopen   iomanX_dopen
+#define dclose  iomanX_dclose
+#define dread   iomanX_dread
+#define getstat iomanX_getstat
+#define chstat  iomanX_chstat
 
-#define format   iomanx_format
-#define rename   iomanx_rename
-#define chdir    iomanx_chdir
-#define sync     iomanx_sync
-#define mount    iomanx_mount
-#define umount   iomanx_umount
-#define lseek64  iomanx_lseek64
-#define devctl   iomanx_devctl
-#define symlink  iomanx_symlink
-#define readlink iomanx_readlink
-#define ioctl2   iomanx_ioctl2
+#define format   iomanX_format
+#define rename   iomanX_rename
+#define chdir    iomanX_chdir
+#define sync     iomanX_sync
+#define mount    iomanX_mount
+#define umount   iomanX_umount
+#define lseek64  iomanX_lseek64
+#define devctl   iomanX_devctl
+#define symlink  iomanX_symlink
+#define readlink iomanX_readlink
+#define ioctl2   iomanX_ioctl2
 
 
 typedef struct _iop_device_ops

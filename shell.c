@@ -204,7 +204,7 @@ static int do_initialize(context_t *ctx, int argc, char *argv[])
         fprintf(stdout, "Use: initialize yes to create APA partitioning.\n");
         return (0);
     } else {
-        int result = iomanx_format("hdd0:", NULL, NULL, 0);
+        int result = iomanX_format("hdd0:", NULL, NULL, 0);
         if (result >= 0) {
             result = mkpfs("__net");
             mkpfs("__system");
@@ -228,7 +228,7 @@ static int do_mkpfs(context_t *ctx, int argc, char *argv[])
     strcpy(tmp, "hdd0:");
     strcat(tmp, argv[1]);
     int result =
-        iomanx_format("pfs:", tmp, (void *)&format_arg, sizeof(format_arg));
+        iomanX_format("pfs:", tmp, (void *)&format_arg, sizeof(format_arg));
     if (result < 0)
         fprintf(stderr, "(!) %s: %s.\n", tmp, strerror(-result));
     return (result);
@@ -282,10 +282,10 @@ static int do_mkpart(context_t *ctx, int arg, char *argv[])
 
     sprintf(openString, "hdd0:%s", argv[1]);
     openString[32 + 5 - 1] = '\0';
-    partfd = iomanx_open(openString, FIO_O_RDONLY);
+    partfd = iomanX_open(openString, FIO_O_RDONLY);
     if (partfd != -2) // partition already exists+
     {
-        iomanx_close(partfd);
+        iomanX_close(partfd);
         printf("%s: partition already exists.\n", argv[1]);
         return (-1);
     }
@@ -315,7 +315,7 @@ static int do_mkpart(context_t *ctx, int arg, char *argv[])
         if (sizesMB[i] <= size_in_mb) {
             sprintf(tmp, "hdd0:%s,,,%s,%s", argv[1], sizesString[i], part_type);
 
-            partfd = iomanx_open(tmp, FIO_O_RDWR | FIO_O_CREAT);
+            partfd = iomanX_open(tmp, FIO_O_RDWR | FIO_O_CREAT);
             if (partfd >= 0) {
                 printf("Main partition of %s created.\n", sizesString[i]);
                 size_in_mb = size_in_mb - sizesMB[i];
@@ -332,7 +332,7 @@ static int do_mkpart(context_t *ctx, int arg, char *argv[])
     if (partfd >= 0) {
         while (size_in_mb > 0 && j >= 0) {
             if (sizesMB[j] <= size_in_mb) {
-                if (iomanx_ioctl2(partfd, HIOCADDSUB, sizesString[j], strlen(sizesString[j]) + 1, NULL, 0) >= 0) {
+                if (iomanX_ioctl2(partfd, HIOCADDSUB, sizesString[j], strlen(sizesString[j]) + 1, NULL, 0) >= 0) {
                     printf("Sub partition of %s created.\n", sizesString[j]);
                     size_in_mb = size_in_mb - sizesMB[j];
                 } else
@@ -343,7 +343,7 @@ static int do_mkpart(context_t *ctx, int arg, char *argv[])
     }
 
     if (result >= 0) {
-        (void)iomanx_close(partfd), result = 0;
+        (void)iomanX_close(partfd), result = 0;
         if (result >= 0)
             if (strncmp(part_type, "PFS", 3) == 0)
                 result = mkpfs(argv[1]);
@@ -370,10 +370,10 @@ static int do_ls(context_t *ctx, int argc, char *argv[])
         char dir_path[256];
         strcpy(dir_path, "pfs0:");
         strcat(dir_path, ctx->path);
-        int dh = iomanx_dopen(dir_path);
+        int dh = iomanX_dopen(dir_path);
         if (dh >= 0) {                    /* dopen successful */
             list_dir_objects(dh, lsmode); /* in hl.c */
-            (void)iomanx_close(dh);
+            (void)iomanX_close(dh);
             return (0);
         } else {
             fprintf(stderr, "(!) ls: %s\n", strerror(-dh));
@@ -386,7 +386,7 @@ static int do_mount(context_t *ctx, int argc, char *argv[])
 {
     strcpy(ctx->mount_point, "hdd0:");
     strcat(ctx->mount_point, argv[1]);
-    int result = iomanx_mount("pfs0:", ctx->mount_point, 0, NULL, 0);
+    int result = iomanX_mount("pfs0:", ctx->mount_point, 0, NULL, 0);
     if (result >= 0) {
         ctx->mount = 1;
         return (0);
@@ -398,7 +398,7 @@ static int do_mount(context_t *ctx, int argc, char *argv[])
 
 static int do_umount(context_t *ctx, int argc, char *argv[])
 {
-    int result = iomanx_umount("pfs0:");
+    int result = iomanX_umount("pfs0:");
     if (result >= 0) {
         ctx->mount = 0;
         return (0);
@@ -438,7 +438,7 @@ static int do_cd(context_t *ctx, int argc, char *argv[])
     char tmp[256];
     strcpy(tmp, "pfs0:");
     strcat(tmp, ctx->path);
-    int result = iomanx_chdir(tmp);
+    int result = iomanX_chdir(tmp);
     if (result < 0) { /* error */
         fprintf(stderr, "(!) %s: %s.\n", tmp, strerror(-result));
         strcpy(ctx->path, backup); /* rollback */
@@ -454,7 +454,7 @@ static int do_mkdir(context_t *ctx, int argc, char *argv[])
     if (tmp[strlen(tmp) - 1] != '/')
         strcat(tmp, "/");
     strcat(tmp, argv[1]);
-    int result = iomanx_mkdir(tmp, 0777);
+    int result = iomanX_mkdir(tmp, 0777);
     if (result < 0)
         fprintf(stderr, "(!) %s: %s.\n", tmp, strerror(-result));
     return (result);
@@ -468,7 +468,7 @@ static int do_rmdir(context_t *ctx, int argc, char *argv[])
     if (tmp[strlen(tmp) - 1] != '/')
         strcat(tmp, "/");
     strcat(tmp, argv[1]);
-    int result = iomanx_rmdir(tmp);
+    int result = iomanX_rmdir(tmp);
     if (result < 0)
         fprintf(stderr, "(!) %s: %s.\n", tmp, strerror(-result));
     return (result);
@@ -484,7 +484,7 @@ static int do_get(context_t *ctx, int argc, char *argv[])
         strcat(tmp, "/");
     strcat(tmp, argv[1]);
 
-    int in = iomanx_open(tmp, FIO_O_RDONLY);
+    int in = iomanX_open(tmp, FIO_O_RDONLY);
     if (in >= 0) {
         int out = open(argv[1], O_CREAT | O_WRONLY |
 #ifdef O_BINARY
@@ -497,7 +497,7 @@ static int do_get(context_t *ctx, int argc, char *argv[])
         if (out != -1) {
             char buf[4096];
             ssize_t len;
-            while ((len = iomanx_read(in, buf, sizeof(buf))) > 0) {
+            while ((len = iomanX_read(in, buf, sizeof(buf))) > 0) {
                 result = write(out, buf, len);
                 if (result != len) {
                     perror(argv[1]);
@@ -508,7 +508,7 @@ static int do_get(context_t *ctx, int argc, char *argv[])
             result = close(out);
         } else
             perror(argv[1]), result = -1;
-        iomanx_close(in);
+        iomanX_close(in);
     } else
         fprintf(stderr, "(!) %s: %s.\n", tmp, strerror(-in)), result = in;
     return (result);
@@ -532,12 +532,12 @@ static int do_put(context_t *ctx, int argc, char *argv[])
 #endif
     );
     if (in != -1) {
-        int out = iomanx_open(tmp, FIO_O_WRONLY | FIO_O_CREAT, 0666);
+        int out = iomanX_open(tmp, FIO_O_WRONLY | FIO_O_CREAT, 0666);
         if (out >= 0) {
             char buf[8 * 4096]; /* bigger buffer performs better via network */
             ssize_t len;
             while ((len = read(in, buf, sizeof(buf))) > 0) {
-                result = iomanx_write(out, buf, len);
+                result = iomanX_write(out, buf, len);
                 if (result != len) {
                     if (result < 0)
                         fprintf(stderr, "(!) %s: %s.\n", tmp, strerror(-result));
@@ -548,7 +548,7 @@ static int do_put(context_t *ctx, int argc, char *argv[])
                     break;
                 }
             }
-            result = iomanx_close(out);
+            result = iomanX_close(out);
         } else
             fprintf(stderr, "(!) %s: %s.\n", tmp, strerror(-out)), result = out;
         (void)close(in);
@@ -565,7 +565,7 @@ static int do_rm(context_t *ctx, int argc, char *argv[])
     if (tmp[strlen(tmp) - 1] != '/')
         strcat(tmp, "/");
     strcat(tmp, argv[1]);
-    int result = iomanx_remove(tmp);
+    int result = iomanX_remove(tmp);
     if (result < 0)
         fprintf(stderr, "(!) %s: %s.\n", tmp, strerror(-result));
     return (result);
@@ -579,7 +579,7 @@ static int do_rename(context_t *ctx, int argc, char *argv[])
     if (tmp[strlen(tmp) - 1] != '/')
         strcat(tmp, "/");
     strcat(tmp, argv[1]);
-    int result = iomanx_rename(tmp, argv[2]);
+    int result = iomanX_rename(tmp, argv[2]);
     if (result < 0)
         fprintf(stderr, "(!) %s: %s.\n", tmp, strerror(-result));
     return (result);
@@ -590,7 +590,7 @@ static int do_rmpart(context_t *ctx, int argc, char *argv[])
     char tmp[256];
     strcpy(tmp, "hdd0:");
     strcat(tmp, argv[1]);
-    int result = iomanx_remove(tmp);
+    int result = iomanX_remove(tmp);
     if (result < 0)
         fprintf(stderr, "(!) %s: %s.\n", tmp, strerror(-result));
     return (result);

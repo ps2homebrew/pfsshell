@@ -16,19 +16,19 @@ int copyto(const char *mount_point, const char *dest, const char *src)
     int retval = 0;
     int in_file = open(src, O_RDONLY | O_BINARY);
     if (in_file != -1) {
-        int result = iomanx_mount("pfs0:", mount_point, 0, NULL, 0);
+        int result = iomanX_mount("pfs0:", mount_point, 0, NULL, 0);
         if (result >= 0) { /* mount successful */
             char dest_path[256];
             strcpy(dest_path, "pfs0:");
             strcat(dest_path, dest);
 
-            int fh = iomanx_open(dest_path,
+            int fh = iomanX_open(dest_path,
                                  FIO_O_WRONLY | FIO_O_CREAT, 0666);
             if (fh >= 0) {
                 char buf[4096 * 16];
                 int len;
                 while ((len = read(in_file, buf, sizeof(buf))) > 0) {
-                    result = iomanx_write(fh, buf, len);
+                    result = iomanX_write(fh, buf, len);
                     if (result < 0) {
                         printf("%s: write failed with %d\n", dest_path, result);
                         retval = -1;
@@ -37,13 +37,13 @@ int copyto(const char *mount_point, const char *dest, const char *src)
                 }
                 if (len < 0)
                     perror(src);
-                result = iomanx_close(fh);
+                result = iomanX_close(fh);
                 if (result < 0)
                     printf("close: failed with %d\n", result), retval = -1;
             } else
                 printf("%s: create failed with %d\n", dest_path, fh), retval = -1;
 
-            result = iomanx_umount("pfs0:");
+            result = iomanX_umount("pfs0:");
             if (result < 0)
                 printf("pfs0: umount failed with %d\n", result), retval = -1;
         } else
@@ -63,17 +63,17 @@ int copyfrom(const char *mount_point, const char *src, const char *dest)
     int retval = 0;
     int out_file = open(dest, O_CREAT | O_WRONLY | O_BINARY, 0664);
     if (out_file != -1) {
-        int result = iomanx_mount("pfs0:", mount_point, 0, NULL, 0);
+        int result = iomanX_mount("pfs0:", mount_point, 0, NULL, 0);
         if (result >= 0) { /* mount successful */
             char src_path[256];
             strcpy(src_path, "pfs0:");
             strcat(src_path, src);
 
-            int fh = iomanx_open(src_path, FIO_O_RDONLY);
+            int fh = iomanX_open(src_path, FIO_O_RDONLY);
             if (fh >= 0) {
                 char buf[4096 * 16];
                 int len;
-                while ((len = iomanx_read(fh, buf, sizeof(buf))) > 0) {
+                while ((len = iomanX_read(fh, buf, sizeof(buf))) > 0) {
                     result = write(out_file, buf, len);
                     if (result == -1) {
                         perror(dest);
@@ -86,13 +86,13 @@ int copyfrom(const char *mount_point, const char *src, const char *dest)
                            src_path, len),
                         retval = -1;
 
-                result = iomanx_close(fh);
+                result = iomanX_close(fh);
                 if (result < 0)
                     printf("close: failed with %d\n", result), retval = -1;
             } else
                 printf("%s: open failed with %d\n", src_path, fh), retval = -1;
 
-            result = iomanx_umount("pfs0:");
+            result = iomanX_umount("pfs0:");
             if (result < 0)
                 printf("pfs0: umount failed with %d\n", result), retval = -1;
         } else
@@ -113,7 +113,7 @@ int list_dir_objects(int dh, int lsmode)
     iox_dirent_t dirent;
     char end_symbol[2];
     end_symbol[1] = '\0';
-    while ((result = iomanx_dread(dh, &dirent)) && result != -1) {
+    while ((result = iomanX_dread(dh, &dirent)) && result != -1) {
         char mode[10 + 1] = {'\0'}; /* unix-style */
         const int m = dirent.stat.mode;
         switch (m & FIO_S_IFMT) { /* item type */
@@ -168,7 +168,7 @@ int lspart(int lsmode)
     char end_symbol[2];
     end_symbol[1] = '\0';
     int retval = 0;
-    int dh = iomanx_dopen(dir_path);
+    int dh = iomanX_dopen(dir_path);
     if (dh >= 0) { /* dopen successful */
 #if 0
         printf("Partitions of %s, dh = %d\n", dir_path, dh);
@@ -177,7 +177,7 @@ int lspart(int lsmode)
         iox_dirent_t dirent;
         if (lsmode == 1)
             printf("Start (sector)  Code      Size         Timestamp  Name\n");
-        while ((result = iomanx_dread(dh, &dirent)) && result != -1) {
+        while ((result = iomanX_dread(dh, &dirent)) && result != -1) {
 
             // Equal to, but avoids overflows of: size * 512 / 1024 / 1024;
             uint32_t size = dirent.stat.size / 2048;
@@ -207,7 +207,7 @@ int lspart(int lsmode)
                        dirent.stat.private_5, dirent.stat.mode, size, mod_time, dirent.name, end_symbol);
         }
 
-        result = iomanx_close(dh);
+        result = iomanX_close(dh);
         if (result < 0)
             printf("dclose: failed with %d\n", result), retval = -1;
     } else
@@ -222,19 +222,19 @@ int lspart(int lsmode)
 int ls(const char *mount_point, const char *path)
 {
     int retval = 0;
-    int result = iomanx_mount("pfs0:", mount_point, 0, NULL, 0);
+    int result = iomanX_mount("pfs0:", mount_point, 0, NULL, 0);
     if (result >= 0) { /* mount successful */
         char dir_path[256];
         strcpy(dir_path, "pfs0:");
         strcat(dir_path, path);
-        int dh = iomanx_dopen(dir_path);
+        int dh = iomanX_dopen(dir_path);
         if (dh >= 0) { /* dopen successful */
 #if 0
 	  printf ("Directory of %s%s\n", mount_point, path);
 #endif
             list_dir_objects(dh, 1);
 
-            result = iomanx_close(dh);
+            result = iomanX_close(dh);
             if (result < 0)
                 printf("dclose: failed with %d\n", result), retval = -1;
         } else
@@ -242,7 +242,7 @@ int ls(const char *mount_point, const char *path)
                    dir_path, dh),
                 retval = -1;
 
-        result = iomanx_umount("pfs0:");
+        result = iomanX_umount("pfs0:");
         if (result < 0)
             printf("pfs0: umount failed with %d\n", result), retval = -1;
     } else
@@ -263,7 +263,7 @@ int mkpfs(const char *mount_point)
     char tmp[256];
     strcpy(tmp, "hdd0:");
     strcat(tmp, mount_point);
-    return (iomanx_format("pfs:", tmp,
+    return (iomanX_format("pfs:", tmp,
                           (void *)&format_arg, sizeof(format_arg)));
 }
 
@@ -276,9 +276,9 @@ int mkpart(const char *mount_point, long size_in_mb, int format)
         sprintf(tmp, "%s,%ldG", mount_point, size_in_mb / 1024);
     else
         sprintf(tmp, "%s,%ldM", mount_point, size_in_mb);
-    int result = iomanx_open(tmp, FIO_O_RDWR | FIO_O_CREAT, 0);
+    int result = iomanX_open(tmp, FIO_O_RDWR | FIO_O_CREAT, 0);
     if (result >= 0) {
-        iomanx_close(result), result = 0;
+        iomanX_close(result), result = 0;
 
         if (format)
             result = mkpfs(mount_point);
@@ -291,7 +291,7 @@ int mkpart(const char *mount_point, long size_in_mb, int format)
  * (__mbr, __common, __net, etc.); __mbr partition is not PFS-formatted */
 int initialize(void)
 {
-    int result = iomanx_format("hdd0:", NULL, NULL, 0);
+    int result = iomanX_format("hdd0:", NULL, NULL, 0);
     if (result >= 0) {
         result = mkpfs("__net");
         mkpfs("__system");
