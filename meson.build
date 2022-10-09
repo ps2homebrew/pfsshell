@@ -23,8 +23,9 @@ libhdlfs_dep = libhdlfs_proj.get_variable('libhdlfs_dep')
 pfsshell_src = [
 	'startup.c',
 	'hl.c',
+	'host_adapter.c',
 	'util.c',
-	'shell.c'
+	'shell.c',
 ]
 pfsshell_cflags = []
 if host_system == 'windows' and cc.get_id() != 'msvc' and cc.get_id() != 'clang-cl'

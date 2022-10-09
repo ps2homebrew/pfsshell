@@ -39,6 +39,18 @@ extern int _init_hdlfs(int argc, char *argv[]);
 #define FIO_SEEK_CUR 1
 #define FIO_SEEK_END 2
 
+/* Device drivers.  */
+
+/* Device types.  */
+#define IOP_DT_CHAR  0x01
+#define IOP_DT_CONS  0x02
+#define IOP_DT_BLOCK 0x04
+#define IOP_DT_RAW   0x08
+#define IOP_DT_FS    0x10
+#ifndef IOMAN_NO_EXTENDED
+#define IOP_DT_FSEXT 0x10000000 /* Supports calls after chstat().  */
+#endif
+
 // Flags for chstat 'statmask'
 #define FIO_CST_MODE 0x0001
 #define FIO_CST_ATTR 0x0002
@@ -165,6 +177,60 @@ typedef struct
 } iox_dirent_t;
 #endif
 
+/* File objects passed to driver operations.  */
+typedef struct _iop_file
+{
+    int32_t mode;                   /* File open mode.  */
+    int32_t unit;                   /* HW device unit number.  */
+    struct _iop_device *device; /* Device driver.  */
+    void *privdata;             /* The device driver can use this however it
+                   wants.  */
+} iop_file_t;
+
+typedef struct _iop_device
+{
+    const char *name;
+    uint32_t type;
+    uint32_t version; /* Not so sure about this one.  */
+    const char *desc;
+    struct _iop_device_ops *ops;
+} iop_device_t;
+
+typedef struct _iop_device_ops
+{
+    int (*init)(iop_device_t *);
+    int (*deinit)(iop_device_t *);
+    int (*format)(iop_file_t *, const char *, const char *, void *, int);
+    int (*open)(iop_file_t *, const char *, int, int);
+    int (*close)(iop_file_t *);
+    int (*read)(iop_file_t *, void *, int);
+    int (*write)(iop_file_t *, void *, int);
+    int (*lseek)(iop_file_t *, int, int);
+    int (*ioctl)(iop_file_t *, int, void *);
+    int (*remove)(iop_file_t *, const char *);
+    int (*mkdir)(iop_file_t *, const char *, int);
+    int (*rmdir)(iop_file_t *, const char *);
+    int (*dopen)(iop_file_t *, const char *);
+    int (*dclose)(iop_file_t *);
+    int (*dread)(iop_file_t *, iox_dirent_t *);
+    int (*getstat)(iop_file_t *, const char *, iox_stat_t *);
+    int (*chstat)(iop_file_t *, const char *, iox_stat_t *, unsigned int);
+
+#ifndef IOMAN_NO_EXTENDED
+    /* Extended ops start here.  */
+    int (*rename)(iop_file_t *, const char *, const char *);
+    int (*chdir)(iop_file_t *, const char *);
+    int (*sync)(iop_file_t *, const char *, int);
+    int (*mount)(iop_file_t *, const char *, const char *, int, void *, int);
+    int (*umount)(iop_file_t *, const char *);
+    int64_t (*lseek64)(iop_file_t *, int64_t, int);
+    int (*devctl)(iop_file_t *, const char *, int, void *, unsigned int, void *, unsigned int);
+    int (*symlink)(iop_file_t *, const char *, const char *);
+    int (*readlink)(iop_file_t *, const char *, char *, unsigned int);
+    int (*ioctl2)(iop_file_t *, int, void *, unsigned int, void *, unsigned int);
+#endif /* IOMAN_NO_EXTENDED */
+} iop_device_ops_t;
+
 /* open() takes an optional mode argument.  */
 int iomanX_open(const char *name, int flags, ...);
 int iomanX_close(int fd);
@@ -198,5 +264,8 @@ int iomanX_devctl(const char *name, int cmd, void *arg, unsigned int arglen, voi
 int iomanX_symlink(const char *old, const char *new);
 int iomanX_readlink(const char *path, char *buf, unsigned int buflen);
 int iomanX_ioctl2(int fd, int cmd, void *arg, unsigned int arglen, void *buf, unsigned int buflen);
+
+int iomanX_AddDrv(iop_device_t *device);
+int iomanX_DelDrv(const char *name);
 
 //const char* strerror (int err);

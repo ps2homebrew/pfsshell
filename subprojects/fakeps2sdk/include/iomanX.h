@@ -88,7 +88,6 @@ typedef struct _iop_device
     struct _iop_device_ops *ops;
 } iop_device_t;
 
-
 #define open    iomanX_open
 #define close   iomanX_close
 #define read    iomanX_read
@@ -116,6 +115,8 @@ typedef struct _iop_device
 #define readlink iomanX_readlink
 #define ioctl2   iomanX_ioctl2
 
+#define AddDrv   iomanX_AddDrv
+#define DelDrv   iomanX_DelDrv
 
 typedef struct _iop_device_ops
 {
