@@ -150,12 +150,14 @@ static int host_translator_op_mkdir(iop_file_t *f, const char *path, int mode)
 {
     (void)f;
 
+#ifndef _WIN32
 	int res = mkdir(path, mode);
 	if (res < 0)
 	{
 		// TODO: translate errno
 		return -errno;
 	}
+#endif
 
     return 0;
 }
@@ -407,9 +409,11 @@ static void convert_stat_to_iomanx(iox_stat_t *iomanx_stat, const struct stat *p
     convert_time_to_iomanx(iomanx_stat->atime, &(posix_stat->st_atime));
     convert_time_to_iomanx(iomanx_stat->mtime, &(posix_stat->st_mtime));
 #else
+#if 0
     convert_time_to_iomanx(iomanx_stat->ctime, &(posix_stat->st_ctim));
     convert_time_to_iomanx(iomanx_stat->atime, &(posix_stat->st_atim));
     convert_time_to_iomanx(iomanx_stat->mtime, &(posix_stat->st_mtim));
+#endif
 #endif
 #if 0
     posix_stat->st_uid = iomanx_stat->private_0;
@@ -503,7 +507,9 @@ static int host_translator_op_sync(iop_file_t *f, const char *dev, int flag)
     (void)dev;
     (void)flag;
 
+#ifndef _WIN32
 	sync();
+#endif
 
     return 0;
 }
@@ -563,31 +569,29 @@ static int host_translator_op_devctl(iop_file_t *f, const char *name, int cmd, v
 static int host_translator_op_symlink(iop_file_t *f, const char *old, const char *new_1)
 {
     (void)f;
-    (void)old;
-    (void)new_1;
 
+#ifndef _WIN32
 	int res = symlink(old, new_1);
 	if (res < 0)
 	{
 		// TODO: translate errno
 		return -errno;
 	}
+#endif
 
     return 0;
 }
 
 static int host_translator_op_readlink(iop_file_t *f, const char *path, char *buf, unsigned int buflen)
 {
-    (void)path;
-    (void)buf;
-    (void)buflen;
-
+#ifndef _WIN32
 	int res = readlink(path, buf, buflen);
 	if (res < 0)
 	{
 		// TODO: translate errno
 		return -errno;
 	}
+#endif
 
     return 0;
 }

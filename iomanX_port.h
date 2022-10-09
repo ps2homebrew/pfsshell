@@ -196,6 +196,10 @@ typedef struct _iop_device
     struct _iop_device_ops *ops;
 } iop_device_t;
 
+#ifdef lseek
+#undef lseek
+#endif
+
 typedef struct _iop_device_ops
 {
     int (*init)(iop_device_t *);
