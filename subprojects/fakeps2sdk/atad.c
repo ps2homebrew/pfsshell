@@ -37,7 +37,17 @@ typedef struct _ata_devinfo
 static int handle = -1;
 
 static u32 hdd_length = 0; /* in sectors */
-char atad_device_path[256] = {"hdd.img"};
+static const char *atad_device_path = NULL;
+
+void set_atad_device_path(const char *path)
+{
+    if (atad_device_path != NULL)
+    {
+        free((char *)atad_device_path);
+        atad_device_path = NULL;
+    }
+    atad_device_path = strdup(path);
+}
 
 void atad_close(void)
 {
@@ -47,6 +57,9 @@ void atad_close(void)
 
 void init(void)
 {
+    if (atad_device_path == NULL) {
+        perror("File path not set"), exit(1);
+    }
 #ifdef _WIN32
     HANDLE win_handle = CreateFileA(atad_device_path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 #endif

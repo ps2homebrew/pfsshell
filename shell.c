@@ -157,11 +157,12 @@ static int do_lcd(context_t *ctx, int argc, char *argv[])
         return (chdir(argv[1]));
 }
 
+/* where (image of) PS2 HDD is; in fake_sdk/atad.c */
+extern void set_atad_device_path(const char *path);
+
 static int do_device(context_t *ctx, int argc, char *argv[])
 {
-    /* where (image of) PS2 HDD is; in fake_sdk/atad.c */
-    extern char atad_device_path[256];
-    strcpy(atad_device_path, argv[1]);
+    set_atad_device_path(argv[1]);
 
     /* mandatory */
     int result = _init_apa(0, NULL);

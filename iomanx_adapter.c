@@ -744,6 +744,9 @@ static void show_help(const char *progname)
            "\n");
 }
 
+/* where (image of) PS2 HDD is; in fake_sdk/atad.c */
+extern void set_atad_device_path(const char *path);
+
 int main(int argc, char *argv[])
 {
     int ret;
@@ -769,9 +772,7 @@ int main(int argc, char *argv[])
         args.argv[0][0] = '\0';
     }
 
-    /* where (image of) PS2 HDD is; in fake_sdk/atad.c */
-    extern char atad_device_path[256];
-    strncpy(atad_device_path, options.device, sizeof(atad_device_path));
+    set_atad_device_path(options.device);
 
     /* mandatory */
     int result = _init_apa(0, NULL);
