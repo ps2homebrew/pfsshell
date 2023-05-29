@@ -89,11 +89,34 @@ pfsfuse_dependson = [
 pfsfuse = executable('pfsfuse', sources: pfsfuse_src, include_directories : libfuse_include, c_args: pfsfuse_cflags, link_args: pfsfuse_ldflags, dependencies: pfsfuse_dependson, install: true)
 endif
 
+pfs2tar_src = [
+	'pfs2tar.c',
+]
+pfs2tar_cflags = []
+if host_system == 'linux'
+	pfs2tar_cflags += ['-pthread']
+endif
+pfs2tar_cflags += ['-D_FILE_OFFSET_BITS=64']
+pfs2tar_ldflags = []
+if host_system == 'windows' and cc.get_id() != 'msvc' and cc.get_id() != 'clang-cl'
+	pfs2tar_ldflags += ['-static']
+endif
+if host_system == 'linux'
+	pfs2tar_ldflags += ['-lpthread']
+endif
+pfs2tar_dependson = [
+	libfakeps2sdk_noinclude_dep,
+	libapa_dep,
+	libpfs_dep,
+	libiomanX_dep,
+]
+pfs2tar = executable('pfs2tar', sources: pfs2tar_src, c_args: pfs2tar_cflags, link_args: pfs2tar_ldflags, dependencies: pfs2tar_dependson, install: true)
+
 if host_system == 'windows' and cc.get_id() != 'msvc' and cc.get_id() != 'clang-cl'
 archive = custom_target(
     'archive',
     output: meson.project_name() + '-' + meson.project_version() + '-win32.7z',
-    input: [pfsshell, libps2hdd, 'README.md', 'COPYING', 'COPYING.AFLv2'],
+    input: [pfsshell, libps2hdd, pfs2tar, 'README.md', 'COPYING', 'COPYING.AFLv2'],
     build_by_default: true,
     command: [find_program('7z'), 'a', '@OUTPUT@', '@INPUT@']
 )
