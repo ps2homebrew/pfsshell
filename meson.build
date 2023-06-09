@@ -89,6 +89,7 @@ pfsfuse_dependson = [
 pfsfuse = executable('pfsfuse', sources: pfsfuse_src, include_directories : libfuse_include, c_args: pfsfuse_cflags, link_args: pfsfuse_ldflags, dependencies: pfsfuse_dependson, install: true)
 endif
 
+if get_option('enable_pfs2tar') == true
 pfs2tar_src = [
 	'pfs2tar.c',
 ]
@@ -111,12 +112,13 @@ pfs2tar_dependson = [
 	libiomanX_dep,
 ]
 pfs2tar = executable('pfs2tar', sources: pfs2tar_src, c_args: pfs2tar_cflags, link_args: pfs2tar_ldflags, dependencies: pfs2tar_dependson, install: true)
+endif
 
 if host_system == 'windows' and cc.get_id() != 'msvc' and cc.get_id() != 'clang-cl'
 archive = custom_target(
     'archive',
     output: meson.project_name() + '-' + meson.project_version() + '-win32.7z',
-    input: [pfsshell, libps2hdd, pfs2tar, 'README.md', 'COPYING', 'COPYING.AFLv2'],
+    input: [pfsshell, libps2hdd, 'README.md', 'COPYING', 'COPYING.AFLv2'],
     build_by_default: true,
     command: [find_program('7z'), 'a', '@OUTPUT@', '@INPUT@']
 )

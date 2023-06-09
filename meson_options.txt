@@ -5,3 +5,10 @@ option(
 	value: false,
 	description: 'Enable building of pfsfuse executable. Requires FUSE to be installed'
 )
+
+option(
+	'enable_pfs2tar',
+	type: 'boolean',
+	value: false,
+	description: 'Enable building of pfs2tar executable.'
+)
