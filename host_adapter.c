@@ -10,39 +10,37 @@
 
 static int host_translator_op_init(iop_device_t *f)
 {
-	(void)f;
+    (void)f;
 
-	return -48;
+    return -48;
 }
 
 static int host_translator_op_exit(iop_device_t *f)
 {
-	(void)f;
+    (void)f;
 
-	return -48;
+    return -48;
 }
 
 static int host_translator_op_format(iop_file_t *f, const char *dev, const char *blockdev, void *arg, int arglen)
 {
-	(void)f;
-	(void)dev;
-	(void)blockdev;
-	(void)arg;
-	(void)arglen;
+    (void)f;
+    (void)dev;
+    (void)blockdev;
+    (void)arg;
+    (void)arglen;
 
-	return -48;
+    return -48;
 }
 
 static int host_translator_op_open(iop_file_t *f, const char *name, int flags, int mode)
 {
-	int translated_flags = 0;
+    int translated_flags = 0;
     if ((flags & FIO_O_RDWR) != 0) {
         flags |= O_RDWR;
-    }
-    else if ((flags & FIO_O_RDONLY) != 0) {
+    } else if ((flags & FIO_O_RDONLY) != 0) {
         flags |= O_RDONLY;
-    }
-    else if ((flags & FIO_O_WRONLY) != 0) {
+    } else if ((flags & FIO_O_WRONLY) != 0) {
         flags |= O_WRONLY;
     }
 #ifndef _WIN32
@@ -61,72 +59,67 @@ static int host_translator_op_open(iop_file_t *f, const char *name, int flags, i
         flags |= O_EXCL;
     }
 
-	int fh = open(name, flags, mode);
-	if (fh < 0)
-	{
-		// TODO: translate errno
-		return -errno;
-	}
-	f->privdata = (void *)(uintptr_t)fh;
-	return 0;
+    int fh = open(name, flags, mode);
+    if (fh < 0) {
+        // TODO: translate errno
+        return -errno;
+    }
+    f->privdata = (void *)(uintptr_t)fh;
+    return 0;
 }
 
 static int host_translator_op_close(iop_file_t *f)
 {
-	int res = close((int)(uintptr_t)f->privdata);
-	if (res < 0)
-	{
-		// TODO: translate errno
-		return -errno;
-	}
+    int res = close((int)(uintptr_t)f->privdata);
+    if (res < 0) {
+        // TODO: translate errno
+        return -errno;
+    }
 
-	return 0;
+    return 0;
 }
 
 static int host_translator_op_read(iop_file_t *f, void *ptr, int size)
 {
-	int res = read((int)(uintptr_t)f->privdata, ptr, size);
-	if (res < 0)
-	{
-		// TODO: translate errno
-		return -errno;
-	}
+    int res = read((int)(uintptr_t)f->privdata, ptr, size);
+    if (res < 0) {
+        // TODO: translate errno
+        return -errno;
+    }
 
-	return res;
+    return res;
 }
 
 static int host_translator_op_write(iop_file_t *f, void *ptr, int size)
 {
-	int res = write((int)(uintptr_t)f->privdata, (const void *)ptr, size);
-	if (res < 0)
-	{
-		// TODO: translate errno
-		return -errno;
-	}
+    int res = write((int)(uintptr_t)f->privdata, (const void *)ptr, size);
+    if (res < 0) {
+        // TODO: translate errno
+        return -errno;
+    }
 
     return res;
 }
 
 static int host_translator_op_lseek(iop_file_t *f, int offset, int mode)
 {
-	// TODO: translate mode
-	int res = lseek((int)(uintptr_t)f->privdata, offset, mode);
-	if (res < 0)
-	{
-		// TODO: translate errno
-		return -errno;
-	}
+    // TODO: translate mode
+    int res = lseek((int)(uintptr_t)f->privdata, offset, mode);
+    if (res < 0) {
+        // TODO: translate errno
+        return -errno;
+    }
 
     return res;
 }
 
 static int host_translator_op_ioctl(iop_file_t *f, int cmd, void *param)
 {
-	(void)f;
-	(void)cmd;
-	(void)param;
+    (void)f;
+    (void)cmd;
+    (void)param;
 
-	// Intentionally not handled.
+    // Intentionally not handled.
 
     return -48;
 }
@@ -135,13 +128,12 @@ static int host_translator_op_remove(iop_file_t *f, const char *name)
 {
     (void)f;
 
-	// TODO: should we also handle directories?
-	int res = unlink(name);
-	if (res < 0)
-	{
-		// TODO: translate errno
-		return -errno;
-	}
+    // TODO: should we also handle directories?
+    int res = unlink(name);
+    if (res < 0) {
+        // TODO: translate errno
+        return -errno;
+    }
 
     return 0;
 }
@@ -151,12 +143,11 @@ static int host_translator_op_mkdir(iop_file_t *f, const char *path, int mode)
     (void)f;
 
 #ifndef _WIN32
-	int res = mkdir(path, mode);
-	if (res < 0)
-	{
-		// TODO: translate errno
-		return -errno;
-	}
+    int res = mkdir(path, mode);
+    if (res < 0) {
+        // TODO: translate errno
+        return -errno;
+    }
 #endif
 
     return 0;
@@ -166,12 +157,11 @@ static int host_translator_op_rmdir(iop_file_t *f, const char *path)
 {
     (void)f;
 
-	int res = rmdir(path);
-	if (res < 0)
-	{
-		// TODO: translate errno
-		return -errno;
-	}
+    int res = rmdir(path);
+    if (res < 0) {
+        // TODO: translate errno
+        return -errno;
+    }
 
     return 0;
 }
@@ -179,10 +169,9 @@ static int host_translator_op_rmdir(iop_file_t *f, const char *path)
 static int host_translator_op_dopen(iop_file_t *f, const char *path)
 {
     DIR *res = opendir(path);
-    if (res == NULL)
-    {
-		// TODO: translate errno
-		return -errno;
+    if (res == NULL) {
+        // TODO: translate errno
+        return -errno;
     }
     f->privdata = (void *)res;
 
@@ -191,16 +180,14 @@ static int host_translator_op_dopen(iop_file_t *f, const char *path)
 
 static int host_translator_op_dclose(iop_file_t *f)
 {
-    if (f->privdata == NULL)
-    {
-    	return -EBADF;
+    if (f->privdata == NULL) {
+        return -EBADF;
     }
 
     int res = closedir((DIR *)f->privdata);
-    if (res < 0)
-    {
-    	// TODO: translate errno
-    	return -errno;
+    if (res < 0) {
+        // TODO: translate errno
+        return -errno;
     }
 
     return 0;
@@ -208,30 +195,24 @@ static int host_translator_op_dclose(iop_file_t *f)
 
 static int host_translator_op_dread(iop_file_t *f, iox_dirent_t *buf)
 {
-    if (f->privdata == NULL)
-    {
-    	return -EBADF;
+    if (f->privdata == NULL) {
+        return -EBADF;
     }
 
     errno = 0;
     struct dirent *d = readdir((DIR *)f->privdata);
-    if (d == NULL)
-    {
-    	if (errno != 0)
-    	{
-    		return -errno;
-    	}
-    	else
-    	{
-    		return -1;
-    	}
+    if (d == NULL) {
+        if (errno != 0) {
+            return -errno;
+        } else {
+            return -1;
+        }
     }
 
     memset(buf, 0, sizeof(*buf));
     int name_len = strlen(d->d_name);
-    if (name_len > sizeof(buf->name))
-    {
-    	name_len = sizeof(buf->name);
+    if (name_len > sizeof(buf->name)) {
+        name_len = sizeof(buf->name);
     }
     memcpy(buf->name, d->d_name, name_len);
 
@@ -423,18 +404,17 @@ static void convert_stat_to_iomanx(iox_stat_t *iomanx_stat, const struct stat *p
 
 static int host_translator_op_getstat(iop_file_t *f, const char *name, iox_stat_t *iomanx_stat)
 {
-	struct stat posix_stat;
+    struct stat posix_stat;
 
     (void)f;
 
-	int res = stat(name, &posix_stat);
-	if (res < 0)
-	{
-		// TODO: translate errno
-		return -errno;
-	}
+    int res = stat(name, &posix_stat);
+    if (res < 0) {
+        // TODO: translate errno
+        return -errno;
+    }
 
-	convert_stat_to_iomanx(iomanx_stat, &posix_stat);
+    convert_stat_to_iomanx(iomanx_stat, &posix_stat);
 
     return 0;
 }
@@ -443,31 +423,26 @@ static int host_translator_op_chstat(iop_file_t *f, const char *name, iox_stat_t
 {
     (void)f;
 
-    if (iomanx_stat == NULL)
-    {
-    	return -EBADF;
+    if (iomanx_stat == NULL) {
+        return -EBADF;
     }
 
-    if ((statmask & FIO_CST_MODE) != 0)
-    {
-    	mode_t posix_mode = 0;
-    	convert_mode_to_posix(&posix_mode, &(iomanx_stat->mode));
-    	int res = chmod(name, posix_mode);
-		if (res < 0)
-		{
-			// TODO: translate errno
-			return -errno;
-		}
+    if ((statmask & FIO_CST_MODE) != 0) {
+        mode_t posix_mode = 0;
+        convert_mode_to_posix(&posix_mode, &(iomanx_stat->mode));
+        int res = chmod(name, posix_mode);
+        if (res < 0) {
+            // TODO: translate errno
+            return -errno;
+        }
     }
 
-    if ((statmask & FIO_CST_AT) != 0)
-    {
-    	// TODO: get stat from stat, then set time using utimes
+    if ((statmask & FIO_CST_AT) != 0) {
+        // TODO: get stat from stat, then set time using utimes
     }
 
-    if ((statmask & FIO_CST_MT) != 0)
-    {
-    	// TODO: get stat from stat, then set time using utimes
+    if ((statmask & FIO_CST_MT) != 0) {
+        // TODO: get stat from stat, then set time using utimes
     }
 
     return 0;
@@ -477,12 +452,11 @@ static int host_translator_op_rename(iop_file_t *f, const char *old, const char 
 {
     (void)f;
 
-	int res = rename(old, new_1);
-	if (res < 0)
-	{
-		// TODO: translate errno
-		return -errno;
-	}
+    int res = rename(old, new_1);
+    if (res < 0) {
+        // TODO: translate errno
+        return -errno;
+    }
 
     return 0;
 }
@@ -491,12 +465,11 @@ static int host_translator_op_chdir(iop_file_t *f, const char *name)
 {
     (void)f;
 
-	int res = chdir(name);
-	if (res < 0)
-	{
-		// TODO: translate errno
-		return -errno;
-	}
+    int res = chdir(name);
+    if (res < 0) {
+        // TODO: translate errno
+        return -errno;
+    }
 
     return 0;
 }
@@ -508,7 +481,7 @@ static int host_translator_op_sync(iop_file_t *f, const char *dev, int flag)
     (void)flag;
 
 #ifndef _WIN32
-	sync();
+    sync();
 #endif
 
     return 0;
@@ -540,28 +513,27 @@ static int host_translator_op_umount(iop_file_t *f, const char *fsname)
 
 static int64_t host_translator_op_lseek64(iop_file_t *f, int64_t offset, int whence)
 {
-	// TODO: translate whence
-	int res = lseek((int)(uintptr_t)f->privdata, offset, whence);
-	if (res < 0)
-	{
-		// TODO: translate errno
-		return -errno;
-	}
+    // TODO: translate whence
+    int res = lseek((int)(uintptr_t)f->privdata, offset, whence);
+    if (res < 0) {
+        // TODO: translate errno
+        return -errno;
+    }
 
     return 0;
 }
 
 static int host_translator_op_devctl(iop_file_t *f, const char *name, int cmd, void *arg, unsigned int arglen, void *buf, unsigned int buflen)
 {
-	(void)f;
-	(void)name;
-	(void)cmd;
-	(void)arg;
-	(void)arglen;
-	(void)buf;
-	(void)buflen;
+    (void)f;
+    (void)name;
+    (void)cmd;
+    (void)arg;
+    (void)arglen;
+    (void)buf;
+    (void)buflen;
 
-	// Intentionally not handled.
+    // Intentionally not handled.
 
     return -48;
 }
@@ -571,12 +543,11 @@ static int host_translator_op_symlink(iop_file_t *f, const char *old, const char
     (void)f;
 
 #ifndef _WIN32
-	int res = symlink(old, new_1);
-	if (res < 0)
-	{
-		// TODO: translate errno
-		return -errno;
-	}
+    int res = symlink(old, new_1);
+    if (res < 0) {
+        // TODO: translate errno
+        return -errno;
+    }
 #endif
 
     return 0;
@@ -585,12 +556,11 @@ static int host_translator_op_symlink(iop_file_t *f, const char *old, const char
 static int host_translator_op_readlink(iop_file_t *f, const char *path, char *buf, unsigned int buflen)
 {
 #ifndef _WIN32
-	int res = readlink(path, buf, buflen);
-	if (res < 0)
-	{
-		// TODO: translate errno
-		return -errno;
-	}
+    int res = readlink(path, buf, buflen);
+    if (res < 0) {
+        // TODO: translate errno
+        return -errno;
+    }
 #endif
 
     return 0;
@@ -598,58 +568,58 @@ static int host_translator_op_readlink(iop_file_t *f, const char *path, char *bu
 
 static int host_translator_op_ioctl2(iop_file_t *f, int cmd, void *arg, unsigned int arglen, void *buf, unsigned int buflen)
 {
-	(void)f;
-	(void)cmd;
-	(void)arg;
-	(void)arglen;
-	(void)buf;
-	(void)buflen;
+    (void)f;
+    (void)cmd;
+    (void)arg;
+    (void)arglen;
+    (void)buf;
+    (void)buflen;
 
-	// Intentionally not handled.
+    // Intentionally not handled.
 
     return -48;
 }
 
 static iop_device_ops_t host_translator_ops = {
-	&host_translator_op_init,
-	&host_translator_op_exit,
-	&host_translator_op_format,
-	&host_translator_op_open,
-	&host_translator_op_close,
-	&host_translator_op_read,
-	&host_translator_op_write,
-	&host_translator_op_lseek,
-	&host_translator_op_ioctl,
-	&host_translator_op_remove,
-	&host_translator_op_mkdir,
-	&host_translator_op_rmdir,
-	&host_translator_op_dopen,
-	&host_translator_op_dclose,
-	&host_translator_op_dread,
-	&host_translator_op_getstat,
-	&host_translator_op_chstat,
-	&host_translator_op_rename,
-	&host_translator_op_chdir,
-	&host_translator_op_sync,
-	&host_translator_op_mount,
-	&host_translator_op_umount,
-	&host_translator_op_lseek64,
-	&host_translator_op_devctl,
-	&host_translator_op_symlink,
-	&host_translator_op_readlink,
-	&host_translator_op_ioctl2,
+    &host_translator_op_init,
+    &host_translator_op_exit,
+    &host_translator_op_format,
+    &host_translator_op_open,
+    &host_translator_op_close,
+    &host_translator_op_read,
+    &host_translator_op_write,
+    &host_translator_op_lseek,
+    &host_translator_op_ioctl,
+    &host_translator_op_remove,
+    &host_translator_op_mkdir,
+    &host_translator_op_rmdir,
+    &host_translator_op_dopen,
+    &host_translator_op_dclose,
+    &host_translator_op_dread,
+    &host_translator_op_getstat,
+    &host_translator_op_chstat,
+    &host_translator_op_rename,
+    &host_translator_op_chdir,
+    &host_translator_op_sync,
+    &host_translator_op_mount,
+    &host_translator_op_umount,
+    &host_translator_op_lseek64,
+    &host_translator_op_devctl,
+    &host_translator_op_symlink,
+    &host_translator_op_readlink,
+    &host_translator_op_ioctl2,
 };
 
 static iop_device_t host_translator_fio_dev = {
-	"host",
-	(IOP_DT_FS | IOP_DT_FSEXT),
-	1,
-	"Host adapter filesystem",
-	&host_translator_ops,
+    "host",
+    (IOP_DT_FS | IOP_DT_FSEXT),
+    1,
+    "Host adapter filesystem",
+    &host_translator_ops,
 };
 
 int host_adapter_init(void)
 {
-	iomanX_AddDrv(&host_translator_fio_dev);
-	return 0;
+    iomanX_AddDrv(&host_translator_fio_dev);
+    return 0;
 }

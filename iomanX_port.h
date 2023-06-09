@@ -20,19 +20,19 @@ extern int _init_apa(int argc, char *argv[]);
 extern int _init_pfs(int argc, char *argv[]);
 extern int _init_hdlfs(int argc, char *argv[]);
 
-#define FIO_O_RDONLY 0x0001
-#define FIO_O_WRONLY 0x0002
-#define FIO_O_RDWR 0x0003
+#define FIO_O_RDONLY  0x0001
+#define FIO_O_WRONLY  0x0002
+#define FIO_O_RDWR    0x0003
 #define FIO_O_DIROPEN 0x0008 // Internal use for dopen
-#define FIO_O_NBLOCK 0x0010
-#define FIO_O_APPEND 0x0100
-#define FIO_O_CREAT 0x0200
-#define FIO_O_TRUNC 0x0400
-#define FIO_O_EXCL 0x0800
-#define FIO_O_NOWAIT 0x8000
+#define FIO_O_NBLOCK  0x0010
+#define FIO_O_APPEND  0x0100
+#define FIO_O_CREAT   0x0200
+#define FIO_O_TRUNC   0x0400
+#define FIO_O_EXCL    0x0800
+#define FIO_O_NOWAIT  0x8000
 
 // Access flags for filesystem mount
-#define FIO_MT_RDWR 0x00
+#define FIO_MT_RDWR   0x00
 #define FIO_MT_RDONLY 0x01
 
 #define FIO_SEEK_SET 0
@@ -55,13 +55,13 @@ extern int _init_hdlfs(int argc, char *argv[]);
 #define FIO_CST_MODE 0x0001
 #define FIO_CST_ATTR 0x0002
 #define FIO_CST_SIZE 0x0004
-#define FIO_CST_CT 0x0008
-#define FIO_CST_AT 0x0010
-#define FIO_CST_MT 0x0020
+#define FIO_CST_CT   0x0008
+#define FIO_CST_AT   0x0010
+#define FIO_CST_MT   0x0020
 #define FIO_CST_PRVT 0x0040
 
 // File mode flags
-#define FIO_S_IFMT 0xF000  // Format mask
+#define FIO_S_IFMT  0xF000 // Format mask
 #define FIO_S_IFLNK 0x4000 // Symbolic link
 #define FIO_S_IFREG 0x2000 // Regular file
 #define FIO_S_IFDIR 0x1000 // Directory
@@ -99,42 +99,42 @@ extern int _init_hdlfs(int argc, char *argv[]);
 //
 #define HIOCADDSUB 0x6801
 #define HIOCDELSUB 0x6802
-#define HIOCNSUB 0x6803
-#define HIOCFLUSH 0x6804
+#define HIOCNSUB   0x6803
+#define HIOCFLUSH  0x6804
 
 // Arbitrarily-named commands
-#define HIOCTRANSFER 0x6832     // Used by PFS.IRX to read/write data
-#define HIOCGETSIZE 0x6833      // For main(0)/subs(1+)
+#define HIOCTRANSFER     0x6832 // Used by PFS.IRX to read/write data
+#define HIOCGETSIZE      0x6833 // For main(0)/subs(1+)
 #define HIOCSETPARTERROR 0x6834 // Set (sector of a partition) that has an error
 #define HIOCGETPARTERROR 0x6835 // Get (sector of a partition) that has an error
 
-//pfs
+// pfs
 
 // IOCTL2 commands
 // Command set 'p'
-#define PIOCALLOC 0x7001
-#define PIOCFREE 0x7002
-#define PIOCATTRADD 0x7003
-#define PIOCATTRDEL 0x7004
+#define PIOCALLOC      0x7001
+#define PIOCFREE       0x7002
+#define PIOCATTRADD    0x7003
+#define PIOCATTRDEL    0x7004
 #define PIOCATTRLOOKUP 0x7005
-#define PIOCATTRREAD 0x7006
-#define PIOCINVINODE 0x7032 //Only available in OSD version. Arbitrarily named.
+#define PIOCATTRREAD   0x7006
+#define PIOCINVINODE   0x7032 // Only available in OSD version. Arbitrarily named.
 
 // DEVCTL commands
 // Command set 'P'
-#define PDIOC_ZONESZ 0x5001
-#define PDIOC_ZONEFREE 0x5002
-#define PDIOC_CLOSEALL 0x5003
+#define PDIOC_ZONESZ      0x5001
+#define PDIOC_ZONEFREE    0x5002
+#define PDIOC_CLOSEALL    0x5003
 #define PDIOC_GETFSCKSTAT 0x5004
 #define PDIOC_CLRFSCKSTAT 0x5005
 
 // Arbitrarily-named commands
-#define PDIOC_SETUID 0x5032
-#define PDIOC_SETGID 0x5033
+#define PDIOC_SETUID     0x5032
+#define PDIOC_SETGID     0x5033
 #define PDIOC_SHOWBITMAP 0xFF
 
 // I/O direction
-#define PFS_IO_MODE_READ 0x00
+#define PFS_IO_MODE_READ  0x00
 #define PFS_IO_MODE_WRITE 0x01
 
 /* ps2_hdd.h: Date/time descriptor used in on-disk partition header */
@@ -161,7 +161,7 @@ typedef struct
     /*14*/ unsigned char atime[8];
     /*1c*/ unsigned char mtime[8];
     /*24*/ unsigned int hisize;
-    /*28*/ unsigned int private_0; //Number of subs (main) / subpart number (sub)
+    /*28*/ unsigned int private_0; // Number of subs (main) / subpart number (sub)
     /*2c*/ unsigned int private_1;
     /*30*/ unsigned int private_2;
     /*34*/ unsigned int private_3;
@@ -180,8 +180,8 @@ typedef struct
 /* File objects passed to driver operations.  */
 typedef struct _iop_file
 {
-    int32_t mode;                   /* File open mode.  */
-    int32_t unit;                   /* HW device unit number.  */
+    int32_t mode;               /* File open mode.  */
+    int32_t unit;               /* HW device unit number.  */
     struct _iop_device *device; /* Device driver.  */
     void *privdata;             /* The device driver can use this however it
                    wants.  */
@@ -272,4 +272,4 @@ int iomanX_ioctl2(int fd, int cmd, void *arg, unsigned int arglen, void *buf, un
 int iomanX_AddDrv(iop_device_t *device);
 int iomanX_DelDrv(const char *name);
 
-//const char* strerror (int err);
+// const char* strerror (int err);

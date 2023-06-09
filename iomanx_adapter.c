@@ -7,7 +7,7 @@
 #include <stddef.h>
 
 #ifdef _WIN32
-#define timegm _mkgmtime
+#define timegm       _mkgmtime
 #define pfsfuse_stat FUSE_STAT
 #else
 #define pfsfuse_stat stat
