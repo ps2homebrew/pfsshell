@@ -164,8 +164,13 @@ static int do_device(context_t *ctx, int argc, char *argv[])
 {
     set_atad_device_path(argv[1]);
 
+    static const char *apa_args[] =
+        {
+            "ps2hdd.irx",
+            NULL};
+
     /* mandatory */
-    int result = _init_apa(0, NULL);
+    int result = _init_apa(1, (char **)apa_args);
     if (result < 0) {
         fprintf(stderr, "(!) init_apa: failed with %d (%s)\n", result,
                 strerror(-result));
