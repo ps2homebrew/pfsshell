@@ -91,6 +91,7 @@ Commands marked with DESTRUCTIVE could potentially wipe or remove important info
     rmpart <part_name> - remove a partition (DESTRUCTIVE)
 
 **File & Folder Editing**
+
     pwd - print the current PS2 HDD directory
 
     ls  - list folders/files (only when partition mounted)
