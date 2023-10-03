@@ -64,6 +64,55 @@ Once you are finished with the program, type in the following:
 
     # exit
 
+## List of commands
+    
+Commands marked with DESTRUCTIVE could potentially wipe or remove important information. Remember to make backups if using these commands.
+
+**Device Selection & Initialization**
+    
+    lcd [path] - print/change the local working directory
+    
+    device <device> - select the PS2 HDD device
+
+    initialize - blank and create a partition on a PS2 HDD device (DESTRUCTIVE)
+
+**Partition Editing**
+
+    ls - list partitions (only when no partition mounted)
+
+    mkpart <part_name> <size> - create a new partition (IMPORTANT size must be power of 2)
+
+    mkfs <part_name> - blank and create PFS on a new partition (DESTRUCTIVE)
+
+    mount <part_name> - mount a partition
+
+    unmount - unmount the active partition
+
+    rmpart <part_name> - remove a partition (DESTRUCTIVE)
+
+**File & Folder Editing**
+
+    pwd - print the current PS2 HDD directory
+
+    ls  - list folders/files (only when partition mounted)
+
+    cd <dir_name> - change directory
+
+    mkdir <dir_name> - create a new directory
+
+    rmdir <dir_name> - delete an existing directory
+
+    pwd - print the current PS2 HDD directory
+
+    get <file_name> - copy a file from PS2 HDD to the working directory
+
+    put <file_name> - copy a file from the working directory to the PS2 HDD
+
+    rm <file_name> - delete a file
+
+    rename <curr_name> <new_name> - rename a file or directory
+
+
 ## pfsfuse
 
 `pfsfuse` provides an ability to mount partition into host filesystem (like network folder).
