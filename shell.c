@@ -111,13 +111,13 @@ static int shell_loop(FILE *in, FILE *out, FILE *err,
 
     while (true) {
         fputs(prompt, err);
-        getline(&line, &len, stdin);
-        if (!strncmp(line, "exit", 4) || !strncmp(line, "quit", 4) || !strncmp(line, "bye", 3)) {
+        int result = getline(&line, &len, stdin);
+        if (result < 0 || !strncmp(line, "exit", 4) || !strncmp(line, "quit", 4) || !strncmp(line, "bye", 3)) {
             break;
         }
         char *tokens[256];
         size_t count;
-        int result = parse_line(line, &tokens, &count);
+        result = parse_line(line, &tokens, &count);
         if (result >= 0) {
             errno = 0; /* reset */
             result = (*process)(data, count, tokens);
