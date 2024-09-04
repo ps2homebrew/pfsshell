@@ -55,7 +55,7 @@ jobs:
           cd test
           time ./pfsshell_test.tcl
 
-      - uses: actions/upload-artifact@master
+      - uses: actions/upload-artifact@v4
         with:
           name: pfsshell-ubuntu
           path: build/pfsshell
@@ -66,7 +66,7 @@ jobs:
           meson setup build/ -Denable_pfsfuse=true
           meson compile -C build
 
-      - uses: actions/upload-artifact@master
+      - uses: actions/upload-artifact@v4
         with:
           name: pfsfuse-ubuntu
           path: build/pfsfuse
@@ -101,7 +101,7 @@ jobs:
           meson setup build/ --cross-file ./external/meson_toolchains/mingw32_meson.ini
           meson compile -C build archive
 
-      - uses: actions/upload-artifact@master
+      - uses: actions/upload-artifact@v4
         with:
           name: pfsshell-win32
           path: build/*.7z
@@ -132,7 +132,7 @@ jobs:
           meson compile -C build
           cp -f external/dokany/license.lgpl.txt build/
 
-      - uses: actions/upload-artifact@master
+      - uses: actions/upload-artifact@v4
         with:
           name: pfsfuse-win32
           path: |
@@ -171,7 +171,7 @@ jobs:
           cd test
           time ./pfsshell_test.tcl
 
-      - uses: actions/upload-artifact@master
+      - uses: actions/upload-artifact@v4
         with:
           name: pfsshell-macos
           path: build/pfsshell
@@ -181,7 +181,7 @@ jobs:
           meson setup build/ -Denable_pfsfuse=true
           meson compile -C build
 
-      - uses: actions/upload-artifact@master
+      - uses: actions/upload-artifact@v4
         with:
           name: pfsfuse-macos
           path: build/pfsfuse
@@ -192,7 +192,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/master'
     steps:
       - name: Download all artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
 
       - name: Prepare artifacts for release
         run: |
