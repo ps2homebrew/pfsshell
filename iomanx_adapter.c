@@ -261,9 +261,9 @@ static void convert_stat_to_posix(struct pfsfuse_stat *posix_stat, const iox_sta
     convert_time_to_posix(&(posix_stat->st_atime), iomanx_stat->atime);
     convert_time_to_posix(&(posix_stat->st_mtime), iomanx_stat->mtime);
 #else
-    convert_time_to_posix(&(posix_stat->st_ctim), iomanx_stat->ctime);
-    convert_time_to_posix(&(posix_stat->st_atim), iomanx_stat->atime);
-    convert_time_to_posix(&(posix_stat->st_mtim), iomanx_stat->mtime);
+    convert_time_to_posix(&(posix_stat->st_ctim.tv_sec), iomanx_stat->ctime);
+    convert_time_to_posix(&(posix_stat->st_atim.tv_sec), iomanx_stat->atime);
+    convert_time_to_posix(&(posix_stat->st_mtim.tv_sec), iomanx_stat->mtime);
 #endif
 #if 0
     posix_stat->st_uid = iomanx_stat->private_0;
@@ -287,9 +287,9 @@ static void convert_stat_to_iomanx(iox_stat_t *iomanx_stat, const struct pfsfuse
     convert_time_to_iomanx(iomanx_stat->atime, &(posix_stat->st_atime));
     convert_time_to_iomanx(iomanx_stat->mtime, &(posix_stat->st_mtime));
 #else
-    convert_time_to_iomanx(iomanx_stat->ctime, &(posix_stat->st_ctim));
-    convert_time_to_iomanx(iomanx_stat->atime, &(posix_stat->st_atim));
-    convert_time_to_iomanx(iomanx_stat->mtime, &(posix_stat->st_mtim));
+    convert_time_to_iomanx(iomanx_stat->ctime, &(posix_stat->st_ctim.tv_sec));
+    convert_time_to_iomanx(iomanx_stat->atime, &(posix_stat->st_atim.tv_sec));
+    convert_time_to_iomanx(iomanx_stat->mtime, &(posix_stat->st_mtim.tv_sec));
 #endif
 #if 0
     posix_stat->st_uid = iomanx_stat->private_0;
