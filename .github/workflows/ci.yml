@@ -122,13 +122,14 @@ jobs:
           update: true
           shell: msys2 {0}
 
-      - name: Enable git symlinks
-        run: |
-          git config --global core.symlinks true
-
       - uses: actions/checkout@v3
         with:
           submodules: recursive
+
+      - name: Enable git symlinks
+        run: |
+          git config core.symlinks true
+          git reset --hard
 
       - name: Build pfsfuse
         run: |
