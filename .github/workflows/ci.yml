@@ -112,13 +112,6 @@ jobs:
      run:
       shell: msys2 {0}
     steps:
-      - name: Enable git symlinks
-        run: |
-          git config --global core.symlinks true
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-
       - name: Install MSYS2 packages
         uses: msys2/setup-msys2@v2
         with:
@@ -128,6 +121,14 @@ jobs:
             mingw-w64-i686-cmake mingw-w64-i686-make mingw-w64-i686-meson
           update: true
           shell: msys2 {0}
+
+      - name: Enable git symlinks
+        run: |
+          git config --global core.symlinks true
+
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
       - name: Build pfsfuse
         run: |
