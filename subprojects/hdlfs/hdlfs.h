@@ -2,12 +2,12 @@
 
 #define __start hdlfs_start
 
-#define HDL_FS_MAGIC 0x1337
-#define APA_FLAG_SUB 0x0001
-#define HDL_INFO_MAGIC 0xDEADFEED
+#define HDL_FS_MAGIC         0x1337
+#define APA_FLAG_SUB         0x0001
+#define HDL_INFO_MAGIC       0xDEADFEED
 #define HDL_GAME_DATA_OFFSET 0x100000
 
-#define HDLFS_GAME_TITLE_LEN 160
+#define HDLFS_GAME_TITLE_LEN  160
 #define HDLFS_STARTUP_PTH_LEN 60
 
 typedef struct
@@ -45,6 +45,6 @@ struct HDLFS_FormatArgs
     unsigned char CompatFlags, DiscType;
     unsigned char TRType, TRMode;
     unsigned int NumSectors, Layer1Start;
-    char GameTitle[HDLFS_GAME_TITLE_LEN];    //In UTF-8
+    char GameTitle[HDLFS_GAME_TITLE_LEN];    // In UTF-8
     char StartupPath[HDLFS_STARTUP_PTH_LEN]; /* NOTE: The startup file name here must be without the ";1" suffix. */
 };

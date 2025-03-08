@@ -17,10 +17,20 @@ typedef struct _ata_devinfo
 ata_devinfo_t *ata_get_devinfo(int device);
 int ata_device_sector_io(int device, void *buf, u32 lba, u32 nsectors, int dir);
 
+#define sceAtaInit        ata_get_devinfo
+#define sceAtaDmaTransfer ata_device_sector_io
+
 #define ata_device_sce_sec_unlock(x, y)     0
+#define sceAtaSecurityUnLock(x, y)          0
 #define ata_device_idle(x, y)               0
+#define sceAtaIdle(x, y)                    0
 #define ata_device_idle_immediate(x)        0
+#define sceAtaIdleImmediate(x)              0
 #define ata_device_sce_identify_drive(x, y) -1
+#define sceAtaGetSceId(x, y)                -1
 #define ata_device_smart_get_status(x)      0
+#define sceAtaSmartReturnStatus(x)          0
 #define ata_device_smart_save_attr(x)       0
+#define sceAtaSmartSaveAttr(x)              0
 #define ata_device_flush_cache(x)           0
+#define sceAtaFlushCache(x)                 0

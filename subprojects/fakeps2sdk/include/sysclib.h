@@ -30,3 +30,9 @@ typedef int64_t s64;
 
 typedef volatile int32_t vs32;
 typedef volatile int64_t vs64;
+
+typedef uintptr_t uiptr;
+typedef intptr_t siptr;
+
+typedef volatile uintptr_t vuiptr;
+typedef volatile intptr_t vsiptr;

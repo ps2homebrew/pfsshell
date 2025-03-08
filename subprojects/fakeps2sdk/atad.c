@@ -23,7 +23,7 @@ typedef uint32_t u32;
 typedef uint64_t u64;
 
 /* These are used with the dir parameter of ata_device_sector_io().  */
-#define ATA_DIR_READ 0
+#define ATA_DIR_READ  0
 #define ATA_DIR_WRITE 1
 
 typedef struct _ata_devinfo
@@ -41,8 +41,7 @@ static const char *atad_device_path = NULL;
 
 void set_atad_device_path(const char *path)
 {
-    if (atad_device_path != NULL)
-    {
+    if (atad_device_path != NULL) {
         free((char *)atad_device_path);
         atad_device_path = NULL;
     }

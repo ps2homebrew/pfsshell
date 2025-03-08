@@ -4,3 +4,6 @@
 [submodule "external/dokany"]
 	path = external/dokany
 	url = https://github.com/dokan-dev/dokany
+[submodule "external/ps2sdk"]
+	path = external/ps2sdk
+	url = https://github.com/ps2dev/ps2sdk.git
