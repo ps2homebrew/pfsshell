@@ -12,3 +12,17 @@ option(
 	value: false,
 	description: 'Enable building of pfs2tar executable.'
 )
+
+option(
+	'enable_pfsd',
+	type: 'boolean',
+	value: false,
+	description: 'Enable building of pfsd executable. Requires SysV and Linux specific APIs.'
+)
+
+option(
+	'enable_ps2kinst',
+	type: 'boolean',
+	value: false,
+	description: 'Enable building of ps2kinst executable. Requires SysV and Linux specific APIs.'
+)

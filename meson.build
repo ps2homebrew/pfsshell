@@ -114,6 +114,59 @@ pfs2tar_dependson = [
 pfs2tar = executable('pfs2tar', sources: pfs2tar_src, c_args: pfs2tar_cflags, link_args: pfs2tar_ldflags, dependencies: pfs2tar_dependson, install: true)
 endif
 
+if get_option('enable_pfsd') == true
+pfsd_src = [
+	'src/pfsd.c',
+	'src/pfslib_compat.c',
+]
+pfsd_cflags = []
+if host_system == 'linux'
+	pfsd_cflags += ['-pthread']
+endif
+pfsd_cflags += ['-D_FILE_OFFSET_BITS=64']
+pfsd_ldflags = []
+if host_system == 'windows' and cc.get_id() != 'msvc' and cc.get_id() != 'clang-cl'
+	pfsd_ldflags += ['-static']
+endif
+if host_system == 'linux'
+	pfsd_ldflags += ['-lpthread']
+endif
+pfsd_dependson = [
+	libfakeps2sdk_noinclude_dep,
+	libapa_dep,
+	libpfs_dep,
+	libiomanX_dep,
+]
+pfsd = executable('pfsd', sources: pfsd_src, c_args: pfsd_cflags, link_args: pfsd_ldflags, dependencies: pfsd_dependson, install: true)
+endif
+
+if get_option('enable_ps2kinst') == true
+ps2kinst_src = [
+	'src/pfsd_client.c',
+	'src/pfslib_compat.c',
+	'src/ps2kinst.c',
+]
+ps2kinst_cflags = []
+if host_system == 'linux'
+	ps2kinst_cflags += ['-pthread']
+endif
+ps2kinst_cflags += ['-D_FILE_OFFSET_BITS=64']
+ps2kinst_ldflags = []
+if host_system == 'windows' and cc.get_id() != 'msvc' and cc.get_id() != 'clang-cl'
+	ps2kinst_ldflags += ['-static']
+endif
+if host_system == 'linux'
+	ps2kinst_ldflags += ['-lpthread']
+endif
+ps2kinst_dependson = [
+	libfakeps2sdk_noinclude_dep,
+	libapa_dep,
+	libpfs_dep,
+	libiomanX_dep,
+]
+ps2kinst = executable('ps2kinst', sources: ps2kinst_src, c_args: ps2kinst_cflags, link_args: ps2kinst_ldflags, dependencies: ps2kinst_dependson, install: true)
+endif
+
 if host_system == 'windows' and cc.get_id() != 'msvc' and cc.get_id() != 'clang-cl'
 archive = custom_target(
     'archive',
