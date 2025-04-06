@@ -5,6 +5,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <winioctl.h>
+#include <io.h>
 #endif
 
 #include <fcntl.h>
@@ -45,7 +46,7 @@ static u32 hdd_length = 0; /* in sectors */
 int set_atad_device_handle(int fd)
 {
 #ifdef _WIN32
-    HANDLE win_handle = CreateFileA(atad_device_path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    HANDLE win_handle = (HANDLE)_get_osfhandle(fd);
 #endif
 #ifdef __APPLE__
     u64 size = 0, sector_count = 0;
