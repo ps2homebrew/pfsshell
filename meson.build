@@ -21,11 +21,11 @@ libhdlfs_proj = subproject('hdlfs')
 libhdlfs_dep = libhdlfs_proj.get_variable('libhdlfs_dep')
 
 pfsshell_src = [
-	'startup.c',
-	'hl.c',
-	'host_adapter.c',
-	'util.c',
-	'shell.c',
+	'src/startup.c',
+	'src/hl.c',
+	'src/host_adapter.c',
+	'src/util.c',
+	'src/shell.c',
 ]
 pfsshell_cflags = []
 if host_system == 'windows' and cc.get_id() != 'msvc' and cc.get_id() != 'clang-cl'
@@ -65,7 +65,7 @@ else
 endif
 
 pfsfuse_src = [
-	'iomanx_adapter.c',
+	'src/iomanx_adapter.c',
 ]
 pfsfuse_cflags = []
 if host_system == 'linux'
@@ -91,7 +91,7 @@ endif
 
 if get_option('enable_pfs2tar') == true
 pfs2tar_src = [
-	'pfs2tar.c',
+	'src/pfs2tar.c',
 ]
 pfs2tar_cflags = []
 if host_system == 'linux'
