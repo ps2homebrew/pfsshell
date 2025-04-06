@@ -73,8 +73,6 @@ int set_atad_device_handle(int fd)
             size = ((size_in_bytes)-511) / 512;
             if ((int64_t)size >= 0) {
                 hdd_length = size;
-                CloseHandle(win_handle);
-                win_handle = INVALID_HANDLE_VALUE;
             } else
                 return 1;
         } else {
@@ -88,11 +86,6 @@ int set_atad_device_handle(int fd)
         }
 #endif
 #ifdef __APPLE__
-    }
-#endif
-#ifdef _WIN32
-    if (win_handle != INVALID_HANDLE_VALUE) {
-        CloseHandle(win_handle);
     }
 #endif
     handle = fd;
