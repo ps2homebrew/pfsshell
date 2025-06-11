@@ -280,7 +280,7 @@ static int tar_part(void)
         int result;
         iox_dirent_t de;
         while ((result = iomanX_dread(dh, &de)) && result != -1) {
-            if (de.stat.mode == 0x0100) {
+            if (de.stat.mode == 0x0100 && de.stat.attr != 1) {
                 char mount_point[256];
                 char prefix_path[256];
 
