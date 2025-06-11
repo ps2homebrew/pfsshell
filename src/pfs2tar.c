@@ -272,7 +272,7 @@ static int tar_c_file(path_info_t *pi, const char *in_path, const iox_stat_t *st
     return 0;
 }
 
-static int tar_part(void)
+static int tar_part(const char *arg)
 {
     int retval = 0;
     int dh = iomanX_dopen("hdd0:");
@@ -281,21 +281,24 @@ static int tar_part(void)
         iox_dirent_t de;
         while ((result = iomanX_dread(dh, &de)) && result != -1) {
             if (de.stat.mode == 0x0100 && de.stat.attr != 1) {
-                char mount_point[256];
-                char prefix_path[256];
+                printf("(%s) %s\n", "hdd0:", de.name);
+                if (arg == NULL || !strcmp(de.name, arg)) {
+                    char mount_point[256];
+                    char prefix_path[256];
 
-                snprintf(mount_point, sizeof(mount_point), "hdd0:%s", de.name);
+                    snprintf(mount_point, sizeof(mount_point), "hdd0:%s", de.name);
 
-                result = iomanX_mount(IOMANX_MOUNT_POINT, mount_point, FIO_MT_RDONLY, NULL, 0);
-                if (result < 0) {
-                    fprintf(stderr, "(!) %s: %s.\n", mount_point, strerror(-result));
-                    continue;
+                    result = iomanX_mount(IOMANX_MOUNT_POINT, mount_point, FIO_MT_RDONLY, NULL, 0);
+                    if (result < 0) {
+                        fprintf(stderr, "(!) %s: %s.\n", mount_point, strerror(-result));
+                        continue;
+                    }
+
+                    snprintf(prefix_path, sizeof(prefix_path), "%s/", de.name);
+                    wrapped_ftw(prefix_path, IOMANX_MOUNT_POINT "/", tar_c_file);
+
+                    iomanX_umount(IOMANX_MOUNT_POINT);
                 }
-
-                snprintf(prefix_path, sizeof(prefix_path), "%s/", de.name);
-                wrapped_ftw(prefix_path, IOMANX_MOUNT_POINT "/", tar_c_file);
-
-                iomanX_umount(IOMANX_MOUNT_POINT);
             }
         }
 
@@ -313,7 +316,7 @@ static int tar_part(void)
 
 static void show_help(const char *progname)
 {
-    printf("usage: %s <device_path>\n", progname);
+    printf("usage: %s <device_path> [<optional_partition_name>]\n", progname);
 }
 
 /* where (image of) PS2 HDD is; in fake_sdk/atad.c */
@@ -388,8 +391,8 @@ int main(int argc, char *argv[])
         fprintf(stderr, "(!) %s: %s.\n", tar_filename, strerror(errno));
         return 1;
     }
-
-    tar_part();
+    const char *arg = (argc > 2) ? argv[2] : NULL;
+    tar_part(arg);
 
     fclose(tarfile_handle);
 
