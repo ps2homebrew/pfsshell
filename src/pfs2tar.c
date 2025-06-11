@@ -313,7 +313,7 @@ static int tar_part(void)
 
 static void show_help(const char *progname)
 {
-    printf("usage: %s <device_path> <tar_path>\n", progname);
+    printf("usage: %s <device_path>\n", progname);
 }
 
 /* where (image of) PS2 HDD is; in fake_sdk/atad.c */
@@ -325,7 +325,7 @@ int main(int argc, char *argv[])
 {
     int result;
 
-    if (argc < 3) {
+    if (argc < 2) {
         show_help(argv[0]);
         return 1;
     }
@@ -362,9 +362,30 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    tarfile_handle = fopen(argv[2], "wb");
+    // Get the input HDD image path
+    const char *input_path = argv[1];
+    const char *last_slash = strrchr(input_path, '/');
+    const char *filename = last_slash ? last_slash + 1 : input_path;
+
+    // Find the last dot for extension
+    const char *last_dot = strrchr(filename, '.');
+    size_t base_len = last_dot ? (size_t)(last_dot - filename) : strlen(filename);
+
+    char tar_filename[1024];
+    snprintf(tar_filename, sizeof(tar_filename), "%.*s.tar", (int)base_len, filename);
+    printf("\n\nCreating tar file: %s.tar\n", tar_filename);
+
+    // Check if file exists
+    FILE *test_file = fopen(tar_filename, "rb");
+    if (test_file != NULL) {
+        fclose(test_file);
+        fprintf(stderr, "(!) %s already exists. Aborting.\n", tar_filename);
+        return 1;
+    }
+
+    tarfile_handle = fopen(tar_filename, "wb");
     if (tarfile_handle == NULL) {
-        fprintf(stderr, "(!) %s: %s.\n", argv[2], strerror(errno));
+        fprintf(stderr, "(!) %s: %s.\n", tar_filename, strerror(errno));
         return 1;
     }
 
