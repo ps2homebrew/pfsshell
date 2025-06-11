@@ -396,6 +396,18 @@ int main(int argc, char *argv[])
 
     fclose(tarfile_handle);
 
+    // Check if the tar file is empty (no files dumped)
+    FILE *check_file = fopen(tar_filename, "rb");
+    if (check_file != NULL) {
+        fseek(check_file, 0, SEEK_END);
+        long size = ftell(check_file);
+        fclose(check_file);
+        if (size == 0) {
+            remove(tar_filename);
+            printf("No files dumped, tar file removed: %s\n", tar_filename);
+        }
+    }
+
     atad_close();
 
     return 0;
