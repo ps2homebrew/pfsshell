@@ -373,10 +373,14 @@ int main(int argc, char *argv[])
     // Find the last dot for extension
     const char *last_dot = strrchr(filename, '.');
     size_t base_len = last_dot ? (size_t)(last_dot - filename) : strlen(filename);
+    const char *arg = (argc > 2) ? argv[2] : NULL;
 
     char tar_filename[1024];
-    snprintf(tar_filename, sizeof(tar_filename), "%.*s.tar", (int)base_len, filename);
-    printf("\n\nCreating tar file: %s.tar\n", tar_filename);
+    if (arg)
+        snprintf(tar_filename, sizeof(tar_filename), "%s_%.*s.tar", arg, (int)base_len, filename);
+    else
+        snprintf(tar_filename, sizeof(tar_filename), "%.*s.tar", (int)base_len, filename);
+    printf("\n\nCreating tar file: %s\n", tar_filename);
 
     // Check if file exists
     FILE *test_file = fopen(tar_filename, "rb");
@@ -391,7 +395,6 @@ int main(int argc, char *argv[])
         fprintf(stderr, "(!) %s: %s.\n", tar_filename, strerror(errno));
         return 1;
     }
-    const char *arg = (argc > 2) ? argv[2] : NULL;
     tar_part(arg);
 
     fclose(tarfile_handle);
