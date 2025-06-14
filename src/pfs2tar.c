@@ -272,7 +272,7 @@ static int tar_c_file(path_info_t *pi, const char *in_path, const iox_stat_t *st
     return 0;
 }
 
-static int tar_part(void)
+static int tar_part(const char *arg)
 {
     int retval = 0;
     int dh = iomanX_dopen("hdd0:");
@@ -280,22 +280,25 @@ static int tar_part(void)
         int result;
         iox_dirent_t de;
         while ((result = iomanX_dread(dh, &de)) && result != -1) {
-            if (de.stat.mode == 0x0100) {
-                char mount_point[256];
-                char prefix_path[256];
+            if (de.stat.mode == 0x0100 && de.stat.attr != 1) {
+                printf("(%s) %s\n", "hdd0:", de.name);
+                if (arg == NULL || !strcmp(de.name, arg)) {
+                    char mount_point[256];
+                    char prefix_path[256];
 
-                snprintf(mount_point, sizeof(mount_point), "hdd0:%s", de.name);
+                    snprintf(mount_point, sizeof(mount_point), "hdd0:%s", de.name);
 
-                result = iomanX_mount(IOMANX_MOUNT_POINT, mount_point, FIO_MT_RDONLY, NULL, 0);
-                if (result < 0) {
-                    fprintf(stderr, "(!) %s: %s.\n", mount_point, strerror(-result));
-                    continue;
+                    result = iomanX_mount(IOMANX_MOUNT_POINT, mount_point, FIO_MT_RDONLY, NULL, 0);
+                    if (result < 0) {
+                        fprintf(stderr, "(!) %s: %s.\n", mount_point, strerror(-result));
+                        continue;
+                    }
+
+                    snprintf(prefix_path, sizeof(prefix_path), "%s/", de.name);
+                    wrapped_ftw(prefix_path, IOMANX_MOUNT_POINT "/", tar_c_file);
+
+                    iomanX_umount(IOMANX_MOUNT_POINT);
                 }
-
-                snprintf(prefix_path, sizeof(prefix_path), "%s/", de.name);
-                wrapped_ftw(prefix_path, IOMANX_MOUNT_POINT "/", tar_c_file);
-
-                iomanX_umount(IOMANX_MOUNT_POINT);
             }
         }
 
@@ -313,7 +316,7 @@ static int tar_part(void)
 
 static void show_help(const char *progname)
 {
-    printf("usage: %s <device_path> <tar_path>\n", progname);
+    printf("usage: %s <device_path> [<optional_partition_name>]\n", progname);
 }
 
 /* where (image of) PS2 HDD is; in fake_sdk/atad.c */
@@ -325,7 +328,7 @@ int main(int argc, char *argv[])
 {
     int result;
 
-    if (argc < 3) {
+    if (argc < 2) {
         show_help(argv[0]);
         return 1;
     }
@@ -362,15 +365,51 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    tarfile_handle = fopen(argv[2], "wb");
-    if (tarfile_handle == NULL) {
-        fprintf(stderr, "(!) %s: %s.\n", argv[2], strerror(errno));
+    // Get the input HDD image path
+    const char *input_path = argv[1];
+    const char *last_slash = strrchr(input_path, '/');
+    const char *filename = last_slash ? last_slash + 1 : input_path;
+
+    // Find the last dot for extension
+    const char *last_dot = strrchr(filename, '.');
+    size_t base_len = last_dot ? (size_t)(last_dot - filename) : strlen(filename);
+    const char *arg = (argc > 2) ? argv[2] : NULL;
+
+    char tar_filename[1024];
+    if (arg)
+        snprintf(tar_filename, sizeof(tar_filename), "%s_%.*s.tar", arg, (int)base_len, filename);
+    else
+        snprintf(tar_filename, sizeof(tar_filename), "%.*s.tar", (int)base_len, filename);
+    printf("\n\nCreating tar file: %s\n", tar_filename);
+
+    // Check if file exists
+    FILE *test_file = fopen(tar_filename, "rb");
+    if (test_file != NULL) {
+        fclose(test_file);
+        fprintf(stderr, "(!) %s already exists. Aborting.\n", tar_filename);
         return 1;
     }
 
-    tar_part();
+    tarfile_handle = fopen(tar_filename, "wb");
+    if (tarfile_handle == NULL) {
+        fprintf(stderr, "(!) %s: %s.\n", tar_filename, strerror(errno));
+        return 1;
+    }
+    tar_part(arg);
 
     fclose(tarfile_handle);
+
+    // Check if the tar file is empty (no files dumped)
+    FILE *check_file = fopen(tar_filename, "rb");
+    if (check_file != NULL) {
+        fseek(check_file, 0, SEEK_END);
+        long size = ftell(check_file);
+        fclose(check_file);
+        if (size == 0) {
+            remove(tar_filename);
+            printf("No files dumped, tar file removed: %s\n", tar_filename);
+        }
+    }
 
     atad_close();
 

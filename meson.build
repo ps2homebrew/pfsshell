@@ -91,27 +91,39 @@ endif
 
 if get_option('enable_pfs2tar') == true
 pfs2tar_src = [
-	'src/pfs2tar.c',
+    'src/pfs2tar.c',
 ]
 pfs2tar_cflags = []
 if host_system == 'linux'
-	pfs2tar_cflags += ['-pthread']
+    pfs2tar_cflags += ['-pthread', '-D_FILE_OFFSET_BITS=64']
+elif host_system == 'darwin'
+    # macOS-specific adjustments
+    # Threads are part of libc, no need for -pthread
+    # No need for -D_FILE_OFFSET_BITS=64
 endif
-pfs2tar_cflags += ['-D_FILE_OFFSET_BITS=64']
+
 pfs2tar_ldflags = []
 if host_system == 'windows' and cc.get_id() != 'msvc' and cc.get_id() != 'clang-cl'
-	pfs2tar_ldflags += ['-static']
+    pfs2tar_ldflags += ['-static']
+elif host_system == 'linux'
+    pfs2tar_ldflags += ['-lpthread']
 endif
-if host_system == 'linux'
-	pfs2tar_ldflags += ['-lpthread']
-endif
+
 pfs2tar_dependson = [
-	libfakeps2sdk_noinclude_dep,
-	libapa_dep,
-	libpfs_dep,
-	libiomanX_dep,
+    libfakeps2sdk_noinclude_dep,
+    libapa_dep,
+    libpfs_dep,
+    libiomanX_dep,
 ]
-pfs2tar = executable('pfs2tar', sources: pfs2tar_src, c_args: pfs2tar_cflags, link_args: pfs2tar_ldflags, dependencies: pfs2tar_dependson, install: true)
+
+pfs2tar = executable(
+    'pfs2tar',
+    sources: pfs2tar_src,
+    c_args: pfs2tar_cflags,
+    link_args: pfs2tar_ldflags,
+    dependencies: pfs2tar_dependson,
+    install: true
+)
 endif
 
 if get_option('enable_pfsd') == true

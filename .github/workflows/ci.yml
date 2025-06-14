@@ -47,7 +47,7 @@ jobs:
 
       - name: Build pfsshell
         run: |
-          meson setup build/
+          meson setup build/ -Denable_pfs2tar=true
           meson compile -C build
 
       - name: Run Test
@@ -58,7 +58,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: pfsshell-ubuntu
-          path: build/pfsshell
+          path: |
+            build/pfsshell
+            build/pfs2tar
 
       - name: Build pfsfuse
         run: |
@@ -98,7 +100,7 @@ jobs:
       - run: python -m pip install --upgrade meson ninja
 
       - run: |
-          meson setup build/ --cross-file ./external/meson_toolchains/mingw32_meson.ini
+          meson setup build/ -Denable_pfs2tar=true --cross-file ./external/meson_toolchains/mingw32_meson.ini
           meson compile -C build archive
 
       - uses: actions/upload-artifact@v4
@@ -168,7 +170,7 @@ jobs:
       - run: brew install macfuse coreutils
 
       - run: |
-          meson setup build/
+          meson setup build/ -Denable_pfs2tar=true
           meson compile -C build
 
       - name: Run Test
@@ -179,7 +181,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: pfsshell-macos
-          path: build/pfsshell
+          path: |
+            build/pfsshell
+            build/pfs2tar
 
       - run: |
           rm -rf build/
