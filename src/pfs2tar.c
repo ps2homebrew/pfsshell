@@ -370,7 +370,16 @@ int main(int argc, char *argv[])
         }
     } else
         snprintf(tar_filename, sizeof(tar_filename), "%.*s.tar", (int)base_len, filename);
-    printf("\n\nCreating tar file: %s\n", tar_filename);
+
+    // Check if tar file already exists for extract mode
+    if (extract_mode) {
+        FILE *test_file = fopen(tar_filename, "rb");
+        if (test_file != NULL) {
+            fclose(test_file);
+            fprintf(stderr, "(!) %s already exists. Aborting.\n", tar_filename);
+            return 1;
+        }
+    }
 
     set_atad_device_path(argv[2]);
     static const char *apa_args[] =
@@ -404,20 +413,18 @@ int main(int argc, char *argv[])
     }
 
 
-    // Check if tar file already exists
-    FILE *test_file = fopen(tar_filename, "rb");
-    if (test_file != NULL) {
-        fclose(test_file);
-        fprintf(stderr, "(!) %s already exists. Aborting.\n", tar_filename);
-        return 1;
-    }
-
     tarfile_handle = fopen(tar_filename, "wb");
     if (tarfile_handle == NULL) {
         fprintf(stderr, "(!) %s: %s.\n", tar_filename, strerror(errno));
         return 1;
     }
-    tar_part(partition_name);
+    if (extract_mode) {
+        printf("Extracting from %s to %s\n", hdd_path, tar_filename);
+        tar_part(partition_name);
+    } else {
+        printf("Restoring from %s to %s\n", tar_filename, hdd_path);
+    }
+
 
     fclose(tarfile_handle);
 
@@ -429,7 +436,7 @@ int main(int argc, char *argv[])
         fclose(check_file);
         if (size == 0) {
             remove(tar_filename);
-            printf("No files dumped, tar file removed: %s\n", tar_filename);
+            printf("Tar file empty, tar file removed: %s\n", tar_filename);
         }
     }
 
