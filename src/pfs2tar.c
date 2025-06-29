@@ -316,7 +316,8 @@ static int tar_part(const char *arg)
 
 static void show_help(const char *progname)
 {
-    printf("usage: %s --extract/--restore <ps2_hdd_device_path> [--partition <optional_partition_name>] [<tar_file>]\n", progname);
+    printf("usage: %s --extract <ps2_hdd_device_path> [--partition <optional_partition_name>] [<tar_file>]\n", progname);
+    printf("usage: %s --restore <ps2_hdd_device_path> --partition <mandatory_partition_name> <tar_file>\n", progname);
 }
 
 /* where (image of) PS2 HDD is; in fake_sdk/atad.c */
@@ -329,7 +330,7 @@ int main(int argc, char *argv[])
     int result;
     bool extract_mode = false;
 
-    if (argc < 2) {
+    if (argc < 4) {
         show_help(argv[0]);
         return 1;
     }
@@ -339,6 +340,11 @@ int main(int argc, char *argv[])
     else if (strcmp(argv[1], "--restore") == 0)
         extract_mode = false;
     else {
+        show_help(argv[0]);
+        return 1;
+    }
+    if (argc < 6 && !extract_mode) {
+        fprintf(stderr, "(!) Missing mandatory arguments for restore mode.\n");
         show_help(argv[0]);
         return 1;
     }
@@ -365,6 +371,9 @@ int main(int argc, char *argv[])
                 snprintf(tar_filename, sizeof(tar_filename), "%s", argv[5]);
             else
                 snprintf(tar_filename, sizeof(tar_filename), "%s_%.*s.tar", partition_name, (int)base_len, filename);
+        } else if (!extract_mode) {
+            show_help(argv[0]);
+            return 1;
         } else {
             snprintf(tar_filename, sizeof(tar_filename), "%s", argv[3]);
         }
@@ -412,7 +421,6 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-
     tarfile_handle = fopen(tar_filename, "wb");
     if (tarfile_handle == NULL) {
         fprintf(stderr, "(!) %s: %s.\n", tar_filename, strerror(errno));
@@ -424,7 +432,6 @@ int main(int argc, char *argv[])
     } else {
         printf("Restoring from %s to %s\n", tar_filename, hdd_path);
     }
-
 
     fclose(tarfile_handle);
 
