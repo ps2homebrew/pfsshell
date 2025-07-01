@@ -557,7 +557,7 @@ int main(int argc, char *argv[])
     int result;
     bool extract_mode = false;
 
-    if (argc < 4) {
+    if (argc < 3) {
         show_help(argv[0]);
         return 1;
     }
@@ -567,11 +567,6 @@ int main(int argc, char *argv[])
     else if (strcmp(argv[1], "--restore") == 0)
         extract_mode = false;
     else {
-        show_help(argv[0]);
-        return 1;
-    }
-    if (argc < 6 && !extract_mode) {
-        fprintf(stderr, "(!) Missing mandatory arguments for restore mode.\n");
         show_help(argv[0]);
         return 1;
     }
@@ -598,9 +593,6 @@ int main(int argc, char *argv[])
                 snprintf(tar_filename, sizeof(tar_filename), "%s", argv[5]);
             else
                 snprintf(tar_filename, sizeof(tar_filename), "%s_%.*s.tar", partition_name, (int)base_len, filename);
-        } else if (!extract_mode) {
-            show_help(argv[0]);
-            return 1;
         } else {
             snprintf(tar_filename, sizeof(tar_filename), "%s", argv[3]);
         }
