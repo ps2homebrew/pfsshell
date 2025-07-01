@@ -465,11 +465,25 @@ static int restore_from_tar(const char *pfs_mount_path, const char *prefix_path)
             convert_posix_time_to_iox_time(mtime, st_time.mtime);
             memcpy(st_time.atime, st_time.mtime, sizeof(st_time.mtime));
             memcpy(st_time.ctime, st_time.mtime, sizeof(st_time.mtime));
+
             iox_stat_t st = {0};
             st.mode = iomanx_mode;
             iomanX_chstat(full_path, &st, FIO_CST_MODE);
             // Set timestamps
             iomanX_chstat(full_path, &st_time, FIO_CST_MT | FIO_CST_AT | FIO_CST_CT);
+        } else if (type == '2') {
+            char link_target[100 + 1] = {0};
+            strncpy(link_target, header + LINK, 100);
+
+            ensure_parent_dirs_exist(full_path);
+
+            // Create symlink
+            int res = iomanX_symlink(link_target, full_path);
+            if (res < 0) {
+                fprintf(stderr, "(!) Failed to create symlink: %s -> %s (%d)\n", full_path, link_target, res);
+                continue;
+            }
+            printf("Restoring symlink: %s -> %s\n", full_path, link_target);
         } else if (type == '0' || type == '\0') {
             // Create directories
             ensure_parent_dirs_exist(full_path);
@@ -503,7 +517,7 @@ static int restore_from_tar(const char *pfs_mount_path, const char *prefix_path)
             iomanX_chstat(full_path, &st, FIO_CST_MODE);
             // Set timestamps
             iomanX_chstat(full_path, &st_time, FIO_CST_MT | FIO_CST_AT | FIO_CST_CT);
-            printf("Restoring: %s (type: %c, size: %u, mask: %o)\n", name, type, size, posix_mode);
+            printf("Restoring file: %s (type: %c, size: %u, mask: %o)\n", name, type, size, posix_mode);
 
             // Skip padding
             if (size % 512 != 0)
