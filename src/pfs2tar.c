@@ -16,6 +16,8 @@
 #define IOMANX_PATH_MAX    256
 #define IOMANX_MOUNT_POINT "pfs0:"
 
+static bool overwrite_mode = false;
+
 /* Mostly based on musl libc's nftw implementation 35e9831156efc1b54e1a91917ba0f787d5df3353 */
 
 typedef struct path_info
@@ -400,6 +402,7 @@ static int restore_from_tar(const char *pfs_mount_path, const char *prefix_path)
     char header[512];
 
     size_t prefix_len = strlen(prefix_path);
+    fseek(tarfile_handle, 0, SEEK_SET);
 
     while (fread(header, 1, 512, tarfile_handle) == 512) {
         if (header[0] == '\0')
@@ -411,26 +414,12 @@ static int restore_from_tar(const char *pfs_mount_path, const char *prefix_path)
         if (name[0] == '\0')
             continue;
 
-        if (strncmp(name, prefix_path, prefix_len) != 0)
-            continue;
-
-        const char *rel_path = name + prefix_len;
-
-        if (*rel_path == '\0')
-            continue;
 
         // Type and size
         char size_str[13] = {0};
         strncpy(size_str, header + SIZE, 12);
         unsigned int size = strtol(size_str, NULL, 8);
         char type = header[TYPE];
-
-        // Full path = pfs0:/ + relative path
-        char full_path[512];
-        snprintf(full_path, sizeof(full_path), "%s%s", pfs_mount_path, rel_path);
-
-        // Create directories
-        ensure_parent_dirs_exist(full_path);
 
         // Parse mtime from tar header
         char mtime_str[13] = {0};
@@ -442,7 +431,33 @@ static int restore_from_tar(const char *pfs_mount_path, const char *prefix_path)
         unsigned int posix_mode = strtol(mode_str, NULL, 8);
         unsigned int iomanx_mode = convert_posix_mode_to_iomanx(posix_mode);
 
+        // Check if file exists and skip if needed
+        if (strncmp(name, prefix_path, prefix_len) != 0) {
+            fseek(tarfile_handle, ((size + 511) / 512) * 512, SEEK_CUR);
+            continue;
+        }
+        const char *rel_path = name + prefix_len;
+
+        if (*rel_path == '\0') {
+            fseek(tarfile_handle, ((size + 511) / 512) * 512, SEEK_CUR);
+            continue;
+        }
+        // Full path = pfs0:/ + relative path
+        char full_path[512];
+        snprintf(full_path, sizeof(full_path), "%s%s", pfs_mount_path, rel_path);
+
+        if (!overwrite_mode) {
+            iox_stat_t st;
+            if (iomanX_getstat(full_path, &st) == 0) {
+                printf("Skipping existing file: %s\n", name);
+                fseek(tarfile_handle, ((size + 511) / 512) * 512, SEEK_CUR);
+                continue;
+            }
+        }
         if (type == '5') {
+            // Create directories
+            ensure_parent_dirs_exist(full_path);
+
             iomanX_mkdir(full_path, 0777);
 
             // Convert to iomanX format
@@ -456,6 +471,9 @@ static int restore_from_tar(const char *pfs_mount_path, const char *prefix_path)
             // Set timestamps
             iomanX_chstat(full_path, &st_time, FIO_CST_MT | FIO_CST_AT | FIO_CST_CT);
         } else if (type == '0' || type == '\0') {
+            // Create directories
+            ensure_parent_dirs_exist(full_path);
+
             int fd = iomanX_open(full_path, FIO_O_WRONLY | FIO_O_CREAT | FIO_O_TRUNC, 0666);
 
             if (fd < 0) {
@@ -485,7 +503,7 @@ static int restore_from_tar(const char *pfs_mount_path, const char *prefix_path)
             iomanX_chstat(full_path, &st, FIO_CST_MODE);
             // Set timestamps
             iomanX_chstat(full_path, &st_time, FIO_CST_MT | FIO_CST_AT | FIO_CST_CT);
-            printf("Restoring: %s (type: %c, size: %u, mask: %o, time: %lu)\n", name, type, size, posix_mode, mtime);
+            printf("Restoring: %s (type: %c, size: %u, mask: %o)\n", name, type, size, posix_mode);
 
             // Skip padding
             if (size % 512 != 0)
@@ -544,7 +562,7 @@ static int part_tar(const char *arg)
 static void show_help(const char *progname)
 {
     printf("usage: %s --extract <ps2_hdd_device_path> [--partition <optional_partition_name>] [<tar_file>]\n", progname);
-    printf("usage: %s --restore <ps2_hdd_device_path> --partition <mandatory_partition_name> <tar_file>\n", progname);
+    printf("usage: %s --restore <ps2_hdd_device_path> --partition <mandatory_partition_name> <tar_file> [--overwrite]\n", progname);
 }
 
 /* where (image of) PS2 HDD is; in fake_sdk/atad.c */
@@ -569,6 +587,12 @@ int main(int argc, char *argv[])
     else {
         show_help(argv[0]);
         return 1;
+    }
+
+    for (int i = 1; i < argc; ++i) {
+        if (strcmp(argv[i], "--overwrite") == 0) {
+            overwrite_mode = true;
+        }
     }
 
     // Get the input HDD image path
