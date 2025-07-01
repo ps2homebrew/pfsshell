@@ -173,6 +173,71 @@ enum TarHeader {
     END = 512
 };
 
+// Converts a POSIX time_t value to an 8-byte iomanX timestamp format
+static void convert_posix_time_to_iox_time(time_t posix_time, unsigned char *iomanx_time)
+{
+    struct tm *tm_time;
+
+    // Convert UTC to JST (revert +9h used in the forward function)
+    posix_time -= 9 * 60 * 60;
+
+    // Convert time_t to tm struct in UTC
+    tm_time = gmtime(&posix_time);
+
+    // Encode into iomanX format
+    iomanx_time[0] = 0; // unused
+    iomanx_time[1] = tm_time->tm_sec;
+    iomanx_time[2] = tm_time->tm_min;
+    iomanx_time[3] = tm_time->tm_hour;
+    iomanx_time[4] = tm_time->tm_mday;
+    iomanx_time[5] = tm_time->tm_mon + 1; // tm_mon is 0-based
+    iomanx_time[6] = tm_time->tm_year + 1900;
+    iomanx_time[7] = (tm_time->tm_year + 1900) >> 8;
+}
+
+static unsigned int convert_posix_mode_to_iomanx(unsigned int posix_mode)
+{
+    unsigned int iomanx_mode = 0;
+
+    if ((posix_mode & 0170000) == 0040000)
+        iomanx_mode |= FIO_S_IFDIR;
+    if ((posix_mode & 0170000) == 0100000)
+        iomanx_mode |= FIO_S_IFREG;
+    if ((posix_mode & 0170000) == 0120000)
+        iomanx_mode |= FIO_S_IFLNK;
+
+    if (posix_mode & 0400)
+        iomanx_mode |= FIO_S_IRUSR;
+    if (posix_mode & 0200)
+        iomanx_mode |= FIO_S_IWUSR;
+    if (posix_mode & 0100)
+        iomanx_mode |= FIO_S_IXUSR;
+
+    if (posix_mode & 0040)
+        iomanx_mode |= FIO_S_IRGRP;
+    if (posix_mode & 0020)
+        iomanx_mode |= FIO_S_IWGRP;
+    if (posix_mode & 0010)
+        iomanx_mode |= FIO_S_IXGRP;
+
+    if (posix_mode & 0004)
+        iomanx_mode |= FIO_S_IROTH;
+    if (posix_mode & 0002)
+        iomanx_mode |= FIO_S_IWOTH;
+    if (posix_mode & 0001)
+        iomanx_mode |= FIO_S_IXOTH;
+
+    if (posix_mode & 04000)
+        iomanx_mode |= FIO_S_ISUID;
+    if (posix_mode & 02000)
+        iomanx_mode |= FIO_S_ISGID;
+    if (posix_mode & 01000)
+        iomanx_mode |= FIO_S_ISVTX;
+
+    return iomanx_mode;
+}
+
+
 static void tar_checksum(const char b[END], char *chk)
 {
     unsigned sum = 0, i;
@@ -367,11 +432,31 @@ static int restore_from_tar(const char *pfs_mount_path, const char *prefix_path)
         // Create directories
         ensure_parent_dirs_exist(full_path);
 
+        // Parse mtime from tar header
+        char mtime_str[13] = {0};
+        strncpy(mtime_str, header + MTIME, 12);
+        time_t mtime = strtol(mtime_str, NULL, 8);
+        // Extract mode from tar header (octal format)
+        char mode_str[8] = {0};
+        strncpy(mode_str, header + MODE, 7);
+        unsigned int posix_mode = strtol(mode_str, NULL, 8);
+        unsigned int iomanx_mode = convert_posix_mode_to_iomanx(posix_mode);
+
         if (type == '5') {
             iomanX_mkdir(full_path, 0777);
+
+            // Convert to iomanX format
+            iox_stat_t st_time = {0};
+            convert_posix_time_to_iox_time(mtime, st_time.mtime);
+            memcpy(st_time.atime, st_time.mtime, sizeof(st_time.mtime));
+            memcpy(st_time.ctime, st_time.mtime, sizeof(st_time.mtime));
+            iox_stat_t st = {0};
+            st.mode = iomanx_mode;
+            iomanX_chstat(full_path, &st, FIO_CST_MODE);
+            // Set timestamps
+            iomanX_chstat(full_path, &st_time, FIO_CST_MT | FIO_CST_AT | FIO_CST_CT);
         } else if (type == '0' || type == '\0') {
             int fd = iomanX_open(full_path, FIO_O_WRONLY | FIO_O_CREAT | FIO_O_TRUNC, 0666);
-            printf("Restoring: %s (type: %c, size: %u)\n", name, type, size);
 
             if (fd < 0) {
                 fprintf(stderr, "(!) Failed to create file: %s\n", full_path);
@@ -389,6 +474,18 @@ static int restore_from_tar(const char *pfs_mount_path, const char *prefix_path)
                 remaining -= chunk;
             }
             iomanX_close(fd);
+
+            // Convert to iomanX format
+            iox_stat_t st_time = {0};
+            convert_posix_time_to_iox_time(mtime, st_time.mtime);
+            memcpy(st_time.atime, st_time.mtime, sizeof(st_time.mtime));
+            memcpy(st_time.ctime, st_time.mtime, sizeof(st_time.mtime));
+            iox_stat_t st = {0};
+            st.mode = iomanx_mode;
+            iomanX_chstat(full_path, &st, FIO_CST_MODE);
+            // Set timestamps
+            iomanX_chstat(full_path, &st_time, FIO_CST_MT | FIO_CST_AT | FIO_CST_CT);
+            printf("Restoring: %s (type: %c, size: %u, mask: %o, time: %lu)\n", name, type, size, posix_mode, mtime);
 
             // Skip padding
             if (size % 512 != 0)
