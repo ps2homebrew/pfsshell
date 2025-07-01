@@ -314,6 +314,136 @@ static int tar_part(const char *arg)
     return retval;
 }
 
+static void ensure_parent_dirs_exist(const char *path)
+{
+    char tmp[IOMANX_PATH_MAX];
+    strncpy(tmp, path, sizeof(tmp));
+    tmp[sizeof(tmp) - 1] = '\0';
+    int result;
+
+    for (char *p = tmp + strlen(IOMANX_MOUNT_POINT) + 1; *p; p++) {
+        if (*p == '/') {
+            *p = '\0';
+            result = iomanX_mkdir(tmp, 0777); // Ignore errors
+            *p = '/';
+        }
+    }
+}
+
+static int restore_from_tar(const char *pfs_mount_path, const char *prefix_path)
+{
+    char header[512];
+
+    size_t prefix_len = strlen(prefix_path);
+
+    while (fread(header, 1, 512, tarfile_handle) == 512) {
+        if (header[0] == '\0')
+            break;
+
+        // Name
+        char name[256] = {0};
+        strncpy(name, header + NAME, 100);
+        if (name[0] == '\0')
+            continue;
+
+        if (strncmp(name, prefix_path, prefix_len) != 0)
+            continue;
+
+        const char *rel_path = name + prefix_len;
+
+        if (*rel_path == '\0')
+            continue;
+
+        // Type and size
+        char size_str[13] = {0};
+        strncpy(size_str, header + SIZE, 12);
+        unsigned int size = strtol(size_str, NULL, 8);
+        char type = header[TYPE];
+
+        // Full path = pfs0:/ + relative path
+        char full_path[512];
+        snprintf(full_path, sizeof(full_path), "%s%s", pfs_mount_path, rel_path);
+
+        // Create directories
+        ensure_parent_dirs_exist(full_path);
+
+        if (type == '5') {
+            iomanX_mkdir(full_path, 0777);
+        } else if (type == '0' || type == '\0') {
+            int fd = iomanX_open(full_path, FIO_O_WRONLY | FIO_O_CREAT | FIO_O_TRUNC, 0666);
+            printf("Restoring: %s (type: %c, size: %u)\n", name, type, size);
+
+            if (fd < 0) {
+                fprintf(stderr, "(!) Failed to create file: %s\n", full_path);
+                fseek(tarfile_handle, ((size + 511) / 512) * 512, SEEK_CUR);
+                continue;
+            }
+
+            // Read and write file content
+            unsigned int remaining = size;
+            while (remaining > 0) {
+                char buf[512];
+                int chunk = remaining > 512 ? 512 : remaining;
+                fread(buf, 1, chunk, tarfile_handle);
+                iomanX_write(fd, buf, chunk);
+                remaining -= chunk;
+            }
+            iomanX_close(fd);
+
+            // Skip padding
+            if (size % 512 != 0)
+                fseek(tarfile_handle, 512 - (size % 512), SEEK_CUR);
+        } else {
+            // Unknown type
+            fseek(tarfile_handle, ((size + 511) / 512) * 512, SEEK_CUR);
+        }
+    }
+
+    return 0;
+}
+
+static int part_tar(const char *arg)
+{
+    int retval = 0;
+    int dh = iomanX_dopen("hdd0:");
+    if (dh >= 0) {
+        int result;
+        iox_dirent_t de;
+        while ((result = iomanX_dread(dh, &de)) && result != -1) {
+            if (de.stat.mode == 0x0100 && de.stat.attr != 1) {
+                printf("(%s) %s\n", "hdd0:", de.name);
+                if (arg == NULL || !strcmp(de.name, arg)) {
+                    char mount_point[256];
+                    char prefix_path[256];
+
+                    snprintf(mount_point, sizeof(mount_point), "hdd0:%s", de.name);
+
+                    result = iomanX_mount(IOMANX_MOUNT_POINT, mount_point, FIO_MT_RDWR, NULL, 0);
+                    if (result < 0) {
+                        fprintf(stderr, "(!) %s: %s.\n", mount_point, strerror(-result));
+                        continue;
+                    }
+
+                    snprintf(prefix_path, sizeof(prefix_path), "%s/", de.name);
+                    restore_from_tar(IOMANX_MOUNT_POINT "/", prefix_path);
+
+                    iomanX_umount(IOMANX_MOUNT_POINT);
+                }
+            }
+        }
+
+        result = iomanX_close(dh);
+        if (result < 0) {
+            printf("(!) dclose: failed with %d\n", result);
+            retval = -1;
+        }
+    } else {
+        printf("(!) dopen: failed with %d\n", dh);
+        retval = dh;
+    }
+    return retval;
+}
+
 static void show_help(const char *progname)
 {
     printf("usage: %s --extract <ps2_hdd_device_path> [--partition <optional_partition_name>] [<tar_file>]\n", progname);
@@ -421,7 +551,10 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    tarfile_handle = fopen(tar_filename, "wb");
+    if (extract_mode)
+        tarfile_handle = fopen(tar_filename, "wb");
+    else
+        tarfile_handle = fopen(tar_filename, "rb");
     if (tarfile_handle == NULL) {
         fprintf(stderr, "(!) %s: %s.\n", tar_filename, strerror(errno));
         return 1;
@@ -431,6 +564,7 @@ int main(int argc, char *argv[])
         tar_part(partition_name);
     } else {
         printf("Restoring from %s to %s\n", tar_filename, hdd_path);
+        part_tar(partition_name);
     }
 
     fclose(tarfile_handle);
