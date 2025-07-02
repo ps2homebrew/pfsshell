@@ -386,12 +386,11 @@ static void ensure_parent_dirs_exist(const char *path)
     char tmp[IOMANX_PATH_MAX];
     strncpy(tmp, path, sizeof(tmp));
     tmp[sizeof(tmp) - 1] = '\0';
-    int result;
 
     for (char *p = tmp + strlen(IOMANX_MOUNT_POINT) + 1; *p; p++) {
         if (*p == '/') {
             *p = '\0';
-            result = iomanX_mkdir(tmp, 0777); // Ignore errors
+            iomanX_mkdir(tmp, 0777); // Ignore errors
             *p = '/';
         }
     }
@@ -425,7 +424,7 @@ static int restore_from_tar(const char *pfs_mount_path, const char *prefix_path)
         char mtime_str[13] = {0};
         strncpy(mtime_str, header + MTIME, 12);
         time_t mtime = strtol(mtime_str, NULL, 8);
-        // Extract mode from tar header (octal format)
+        // Backup mode from tar header (octal format)
         char mode_str[8] = {0};
         strncpy(mode_str, header + MODE, 7);
         unsigned int posix_mode = strtol(mode_str, NULL, 8);
@@ -575,7 +574,7 @@ static int part_tar(const char *arg)
 
 static void show_help(const char *progname)
 {
-    printf("usage: %s --extract <ps2_hdd_device_path> [--partition <optional_partition_name>] [<tar_file>]\n", progname);
+    printf("usage: %s --backup <ps2_hdd_device_path> [--partition <optional_partition_name>] [<tar_file>]\n", progname);
     printf("usage: %s --restore <ps2_hdd_device_path> --partition <mandatory_partition_name> <tar_file> [--overwrite]\n", progname);
 }
 
@@ -587,17 +586,17 @@ extern void atad_close(void); /* fake_sdk/atad.c */
 int main(int argc, char *argv[])
 {
     int result;
-    bool extract_mode = false;
+    bool backup_mode = false;
 
     if (argc < 3) {
         show_help(argv[0]);
         return 1;
     }
 
-    if (strcmp(argv[1], "--extract") == 0)
-        extract_mode = true;
+    if (strcmp(argv[1], "--backup") == 0)
+        backup_mode = true;
     else if (strcmp(argv[1], "--restore") == 0)
-        extract_mode = false;
+        backup_mode = false;
     else {
         show_help(argv[0]);
         return 1;
@@ -620,7 +619,7 @@ int main(int argc, char *argv[])
     char tar_filename[1024];
     const char *partition_name = NULL;
     if (argc >= 4) {
-        if (strncmp(argv[3], "--partition", 11) == 0) {
+        if (strcmp(argv[3], "--partition") == 0) {
             if (argc < 5) {
                 fprintf(stderr, "(!) Missing partition name.\n");
                 show_help(argv[0]);
@@ -637,8 +636,8 @@ int main(int argc, char *argv[])
     } else
         snprintf(tar_filename, sizeof(tar_filename), "%.*s.tar", (int)base_len, filename);
 
-    // Check if tar file already exists for extract mode
-    if (extract_mode) {
+    // Check if tar file already exists for backup mode
+    if (backup_mode) {
         FILE *test_file = fopen(tar_filename, "rb");
         if (test_file != NULL) {
             fclose(test_file);
@@ -678,7 +677,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if (extract_mode)
+    if (backup_mode)
         tarfile_handle = fopen(tar_filename, "wb");
     else
         tarfile_handle = fopen(tar_filename, "rb");
@@ -686,8 +685,8 @@ int main(int argc, char *argv[])
         fprintf(stderr, "(!) %s: %s.\n", tar_filename, strerror(errno));
         return 1;
     }
-    if (extract_mode) {
-        printf("Extracting from %s to %s\n", hdd_path, tar_filename);
+    if (backup_mode) {
+        printf("Backing up from %s to %s\n", hdd_path, tar_filename);
         tar_part(partition_name);
     } else {
         printf("Restoring from %s to %s\n", tar_filename, hdd_path);
