@@ -688,6 +688,9 @@ int main(int argc, char *argv[])
     if (backup_mode) {
         printf("Backing up from %s to %s\n", hdd_path, tar_filename);
         tar_part(partition_name);
+        char zero_block[512] = {0};
+        fwrite(zero_block, 1, 512, tarfile_handle);
+        fwrite(zero_block, 1, 512, tarfile_handle);
     } else {
         printf("Restoring from %s to %s\n", tar_filename, hdd_path);
         part_tar(partition_name);
@@ -701,7 +704,7 @@ int main(int argc, char *argv[])
         fseek(check_file, 0, SEEK_END);
         long size = ftell(check_file);
         fclose(check_file);
-        if (size == 0) {
+        if (size <= 1024) { // If the file is less than 1KB, consider it empty
             remove(tar_filename);
             printf("Tar file empty, tar file removed: %s\n", tar_filename);
         }
