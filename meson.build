@@ -183,7 +183,7 @@ if host_system == 'windows' and cc.get_id() != 'msvc' and cc.get_id() != 'clang-
 archive = custom_target(
     'archive',
     output: meson.project_name() + '-' + meson.project_version() + '-win32.7z',
-    input: [pfsshell, libps2hdd, 'README.md', 'COPYING', 'COPYING.AFLv2'],
+    input: [pfsshell, libps2hdd, pfs2tar, 'README.md', 'COPYING', 'COPYING.AFLv2'],
     build_by_default: true,
     command: [find_program('7z'), 'a', '@OUTPUT@', '@INPUT@']
 )
