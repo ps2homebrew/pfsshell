@@ -266,6 +266,7 @@ static int tar_c_file(path_info_t *pi, const char *in_path, const iox_stat_t *st
 
     if ((FIO_S_ISREG(st->mode)) && (st->hisize != 0)) {
         /* The file is over 4GB, which we don't support (currently) */
+        printf("(!) %s: too large file. Skipping.\n", in_path); // Print message for large file
         return 0;
     }
 
@@ -286,6 +287,7 @@ static int tar_c_file(path_info_t *pi, const char *in_path, const iox_stat_t *st
 
         if (path_separate == NULL) {
             /* Path is too long */
+            printf("(!) %s: path is too long. Skipping.\n", in_path); // Print message for long path
             return 0;
         }
 
