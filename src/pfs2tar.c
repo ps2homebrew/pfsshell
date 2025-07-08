@@ -57,11 +57,14 @@ static int do_wrapped_ftw(path_info_t *pi, char *path, wrapped_ftw_callback fn)
                 }
                 path[j] = '/';
                 strcpy(path + j + 1, de.name);
+                printf("\r\033[K     %s", path);
+                fflush(stdout);
                 if ((r = do_wrapped_ftw(pi, path, fn))) {
                     iomanX_close(d);
                     return r;
                 }
             }
+            printf("\r\033[K");
             iomanX_close(d);
         } else {
             return -1;
@@ -348,7 +351,7 @@ static int tar_part(const char *arg)
         iox_dirent_t de;
         while ((result = iomanX_dread(dh, &de)) && result != -1) {
             if (de.stat.mode == 0x0100 && de.stat.attr != 1) {
-                printf("(%s) %s\n", "hdd0:", de.name);
+                printf("%s%s\n", "hdd0:", de.name);
                 if (arg == NULL || !strcmp(de.name, arg)) {
                     char mount_point[256];
                     char prefix_path[256];
@@ -366,6 +369,7 @@ static int tar_part(const char *arg)
 
                     iomanX_umount(IOMANX_MOUNT_POINT);
                 }
+                printf("\n");
             }
         }
 
