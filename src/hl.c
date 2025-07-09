@@ -176,7 +176,7 @@ int lspart(int lsmode)
         int result;
         iox_dirent_t dirent;
         if (lsmode == 1)
-            printf("Start (sector)  Code      Size         Timestamp  Name\n");
+            printf("Start (sector)       Code      Size         Timestamp  Name\n");
         while ((result = iomanX_dread(dh, &dirent)) && result != -1) {
 
             // Equal to, but avoids overflows of: size * 512 / 1024 / 1024;
@@ -202,9 +202,14 @@ int lspart(int lsmode)
             if (lsmode == 0)
                 printf("%s%s\n",
                        dirent.name, end_symbol);
-            else if (lsmode == 1)
-                printf("%#8x        %04X %7uMB  %s  %s%s\n",
-                       dirent.stat.private_5, dirent.stat.mode, size, mod_time, dirent.name, end_symbol);
+            else if (lsmode == 1) {
+                if (dirent.stat.private_5 % 0x200000 == 0)
+                    printf("%#11x %4u GB  %04X %7uMB  %s  %s%s\n",
+                           dirent.stat.private_5, dirent.stat.private_5 / 0x200000, dirent.stat.mode, size, mod_time, dirent.name, end_symbol);
+                else
+                    printf("%#11x          %04X %7uMB  %s  %s%s\n",
+                           dirent.stat.private_5, dirent.stat.mode, size, mod_time, dirent.name, end_symbol);
+            }
         }
 
         result = iomanX_close(dh);

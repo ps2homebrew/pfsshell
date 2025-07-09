@@ -620,7 +620,7 @@ static int do_help(context_t *ctx, int argc, char *argv[])
         "\tOnly fs type PFS will format partition, other partitions should be formatted by another utilities;\n"
         "mount <part_name> - mount a partition;\n"
         "umount - un-mount a partition;\n"
-        "ls [-l] - no mount: list partitions; mount: list files/dirs;\n"
+        "ls [-l] - no mount: list partitions; mount: list files/dirs; -l: verbose list;\n"
         "rename <curr_name> <new_name> - no mount: rename partition; mount: rename a file/dir.\n"
         "mkdir <dir_name> - create a new directory;\n"
         "rmdir <dir_name> - delete an existing directory;\n"
