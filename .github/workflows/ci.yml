@@ -19,6 +19,14 @@ on:
       - "**.in"
       - "**.yml"
 
+env:
+  CMAKE_GENERATOR: Ninja
+  HOMEBREW_NO_ANALYTICS: 1
+  HOMEBREW_NO_AUTO_UPDATE: 1
+  HOMEBREW_NO_INSTALL_UPGRADE: 1
+  HOMEBREW_NO_INSTALL_CLEANUP: 1
+  DEBIAN_FRONTEND: noninteractive
+  TZ: Japan
 jobs:
   build-ubuntu:
     runs-on: ubuntu-latest
@@ -29,8 +37,8 @@ jobs:
     steps:
       - name: Install build dependancies
         run: |
-          apt-get update
-          apt-get install build-essential expect pkg-config fuse libfuse-dev git
+          apt-get -y update
+          apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install build-essential expect pkg-config fuse libfuse-dev git
 
       - uses: actions/checkout@v3
         with:
@@ -85,8 +93,8 @@ jobs:
       options: "--user 0"
     steps:
       - run: |
-          apt-get update
-          apt-get install build-essential mingw-w64 git
+          apt-get -y update
+          apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install build-essential mingw-w64 git
           update-alternatives --set i686-w64-mingw32-gcc /usr/bin/i686-w64-mingw32-gcc-posix
           update-alternatives --set i686-w64-mingw32-g++ /usr/bin/i686-w64-mingw32-g++-posix
 
@@ -219,8 +227,8 @@ jobs:
 
       - name: Install build dependancies
         run: |
-          apt-get update
-          apt-get install p7zip-full
+          apt-get -y update
+          apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install p7zip-full
 
       - name: Prepare artifacts for release
         run: |
