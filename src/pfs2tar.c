@@ -57,11 +57,14 @@ static int do_wrapped_ftw(path_info_t *pi, char *path, wrapped_ftw_callback fn)
                 }
                 path[j] = '/';
                 strcpy(path + j + 1, de.name);
+                printf("\r\033[K     %s", path);
+                fflush(stdout);
                 if ((r = do_wrapped_ftw(pi, path, fn))) {
                     iomanX_close(d);
                     return r;
                 }
             }
+            printf("\r\033[K");
             iomanX_close(d);
         } else {
             return -1;
@@ -263,6 +266,7 @@ static int tar_c_file(path_info_t *pi, const char *in_path, const iox_stat_t *st
 
     if ((FIO_S_ISREG(st->mode)) && (st->hisize != 0)) {
         /* The file is over 4GB, which we don't support (currently) */
+        printf("(!) %s: too large file. Skipping.\n", in_path); // Print message for large file
         return 0;
     }
 
@@ -283,6 +287,7 @@ static int tar_c_file(path_info_t *pi, const char *in_path, const iox_stat_t *st
 
         if (path_separate == NULL) {
             /* Path is too long */
+            printf("(!) %s: path is too long. Skipping.\n", in_path); // Print message for long path
             return 0;
         }
 
@@ -348,7 +353,7 @@ static int tar_part(const char *arg)
         iox_dirent_t de;
         while ((result = iomanX_dread(dh, &de)) && result != -1) {
             if (de.stat.mode == 0x0100 && de.stat.attr != 1) {
-                printf("(%s) %s\n", "hdd0:", de.name);
+                printf("%s%s\n", "hdd0:", de.name);
                 if (arg == NULL || !strcmp(de.name, arg)) {
                     char mount_point[256];
                     char prefix_path[256];
@@ -366,6 +371,7 @@ static int tar_part(const char *arg)
 
                     iomanX_umount(IOMANX_MOUNT_POINT);
                 }
+                printf("\n");
             }
         }
 
@@ -688,6 +694,9 @@ int main(int argc, char *argv[])
     if (backup_mode) {
         printf("Backing up from %s to %s\n", hdd_path, tar_filename);
         tar_part(partition_name);
+        char zero_block[512] = {0};
+        fwrite(zero_block, 1, 512, tarfile_handle);
+        fwrite(zero_block, 1, 512, tarfile_handle);
     } else {
         printf("Restoring from %s to %s\n", tar_filename, hdd_path);
         part_tar(partition_name);
@@ -701,7 +710,7 @@ int main(int argc, char *argv[])
         fseek(check_file, 0, SEEK_END);
         long size = ftell(check_file);
         fclose(check_file);
-        if (size == 0) {
+        if (size <= 1024) { // If the file is less than 1KB, consider it empty
             remove(tar_filename);
             printf("Tar file empty, tar file removed: %s\n", tar_filename);
         }
