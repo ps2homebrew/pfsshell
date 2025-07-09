@@ -246,7 +246,11 @@ static int do_mkpfs(context_t *ctx, int argc, char *argv[])
 static int do_mkpart(context_t *ctx, int arg, char *argv[])
 {
 
-    static char *sizesString[9] = {
+    static char *sizesString[13] = {
+        "8M",
+        "16M",
+        "32M",
+        "64M",
         "128M",
         "256M",
         "512M",
@@ -255,9 +259,14 @@ static int do_mkpart(context_t *ctx, int arg, char *argv[])
         "4G",
         "8G",
         "16G",
-        "32G"};
+        "32G",
+    };
 
-    static unsigned int sizesMB[9] = {
+    static unsigned int sizesMB[13] = {
+        8,
+        16,
+        32,
+        64,
         128,
         256,
         512,
@@ -266,7 +275,8 @@ static int do_mkpart(context_t *ctx, int arg, char *argv[])
         4096,
         8192,
         16384,
-        32768};
+        32768,
+    };
 
     static char *fsType[7] = {
         "MBR",
@@ -275,7 +285,8 @@ static int do_mkpart(context_t *ctx, int arg, char *argv[])
         "REISER",
         "PFS",
         "CFS",
-        "HDL"};
+        "HDL",
+    };
 
     unsigned int size_in_mb = 0;
 
