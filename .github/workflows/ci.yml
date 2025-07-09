@@ -33,8 +33,8 @@ jobs:
 
       - name: Install build dependancies
         run: |
-          sudo apt-get update
-          sudo apt-get install build-essential expect pkg-config fuse libfuse-dev
+          apt-get update
+          apt-get install build-essential expect pkg-config fuse libfuse-dev
 
       - uses: actions/setup-python@v3
         with:
@@ -89,10 +89,10 @@ jobs:
           submodules: recursive
 
       - run: |
-          sudo apt-get update
-          sudo apt-get install build-essential mingw-w64
-          sudo update-alternatives --set i686-w64-mingw32-gcc /usr/bin/i686-w64-mingw32-gcc-posix
-          sudo update-alternatives --set i686-w64-mingw32-g++ /usr/bin/i686-w64-mingw32-g++-posix
+          apt-get update
+          apt-get install build-essential mingw-w64
+          update-alternatives --set i686-w64-mingw32-gcc /usr/bin/i686-w64-mingw32-gcc-posix
+          update-alternatives --set i686-w64-mingw32-g++ /usr/bin/i686-w64-mingw32-g++-posix
 
       - uses: actions/setup-python@v3
         with:
@@ -219,8 +219,8 @@ jobs:
 
       - name: Install build dependancies
         run: |
-          sudo apt-get update
-          sudo apt-get install p7zip-full
+          apt-get update
+          apt-get install p7zip-full
 
       - name: Prepare artifacts for release
         run: |
