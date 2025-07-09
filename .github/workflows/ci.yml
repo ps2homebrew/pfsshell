@@ -38,7 +38,7 @@ jobs:
       - name: Install build dependancies
         run: |
           apt-get -y update
-          apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install build-essential expect pkg-config fuse libfuse-dev git
+          apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install build-essential expect pkg-config fuse libfuse-dev git time
 
       - uses: actions/checkout@v3
         with:
