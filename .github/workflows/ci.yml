@@ -27,14 +27,14 @@ jobs:
       image: ubuntu:20.04
       options: "--user 0"
     steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-
       - name: Install build dependancies
         run: |
           apt-get update
-          apt-get install build-essential expect pkg-config fuse libfuse-dev
+          apt-get install build-essential expect pkg-config fuse libfuse-dev git
+
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
       - uses: actions/setup-python@v3
         with:
@@ -84,15 +84,15 @@ jobs:
       image: ubuntu:20.04
       options: "--user 0"
     steps:
+      - run: |
+          apt-get update
+          apt-get install build-essential mingw-w64 git
+          update-alternatives --set i686-w64-mingw32-gcc /usr/bin/i686-w64-mingw32-gcc-posix
+          update-alternatives --set i686-w64-mingw32-g++ /usr/bin/i686-w64-mingw32-g++-posix
+
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-
-      - run: |
-          apt-get update
-          apt-get install build-essential mingw-w64
-          update-alternatives --set i686-w64-mingw32-gcc /usr/bin/i686-w64-mingw32-gcc-posix
-          update-alternatives --set i686-w64-mingw32-g++ /usr/bin/i686-w64-mingw32-g++-posix
 
       - uses: actions/setup-python@v3
         with:
