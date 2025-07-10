@@ -1,269 +1,296 @@
-name: Continuous Integration
-on:
-  push:
-    paths:
-      - "**.c"
-      - "**.h"
-      - "**.cpp"
-      - "**.hpp"
-      - "**.build"
-      - "**.in"
-      - "**.yml"
-  pull_request:
-    paths:
-      - "**.c"
-      - "**.h"
-      - "**.cpp"
-      - "**.hpp"
-      - "**.build"
-      - "**.in"
-      - "**.yml"
-
-env:
-  CMAKE_GENERATOR: Ninja
-  HOMEBREW_NO_ANALYTICS: 1
-  HOMEBREW_NO_AUTO_UPDATE: 1
-  HOMEBREW_NO_INSTALL_UPGRADE: 1
-  HOMEBREW_NO_INSTALL_CLEANUP: 1
-  DEBIAN_FRONTEND: noninteractive
-  TZ: Japan
-jobs:
-  build-ubuntu:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    container:
-      image: ubuntu:20.04
-      options: "--user 0"
-    steps:
-      - name: Install build dependancies
-        run: |
-          apt-get -y update
-          apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install build-essential expect pkg-config fuse libfuse-dev git time p7zip-full
-
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.13.3"
-
-      - uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip
-          restore-keys: |
-            ${{ runner.os }}-pip
-
-      - run: python -m pip install --upgrade meson ninja
-
-      - name: Build pfsshell
-        run: |
-          meson setup build/ -Denable_pfs2tar=true
-          meson compile -C build
-
-      - name: Run Test
-        run: |
-          cd test
-          time ./pfsshell_test.tcl
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: pfsshell-ubuntu
-          path: |
-            build/pfsshell
-            build/pfs2tar
-
-      - name: Build pfsfuse
-        run: |
-          rm -rf build/
-          meson setup build/ -Denable_pfsfuse=true
-          meson compile -C build
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: pfsfuse-ubuntu
-          path: build/pfsfuse
-
-  build-win32:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    container:
-      image: ubuntu:20.04
-      options: "--user 0"
-    steps:
-      - run: |
-          apt-get -y update
-          apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install build-essential mingw-w64 git p7zip-full
-          update-alternatives --set i686-w64-mingw32-gcc /usr/bin/i686-w64-mingw32-gcc-posix
-          update-alternatives --set i686-w64-mingw32-g++ /usr/bin/i686-w64-mingw32-g++-posix
-
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.13.3"
-
-      - uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip
-          restore-keys: |
-            ${{ runner.os }}-pip
-
-      - run: python -m pip install --upgrade meson ninja
-
-      - run: |
-          meson setup build/ -Denable_pfs2tar=true --cross-file ./external/meson_toolchains/mingw32_meson.ini
-          meson compile -C build archive
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: pfsshell-win32
-          path: build/*.7z
-
-  build-pfsfuse-win32:
-    runs-on: windows-latest
-    timeout-minutes: 20
-    defaults:
-     run:
-      shell: msys2 {0}
-    steps:
-      - name: Install MSYS2 packages
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW32
-          install: |
-            base-devel git make texinfo patch binutils mpc-devel p7zip mingw-w64-i686-gcc
-            mingw-w64-i686-cmake mingw-w64-i686-make mingw-w64-i686-meson
-          update: true
-          shell: msys2 {0}
-
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-
-      - name: Enable git symlinks
-        run: |
-          git config core.symlinks true
-          git reset --hard
-
-      - name: Build pfsfuse
-        run: |
-          meson setup build/ -Denable_pfsfuse=true
-          meson compile -C build
-          cp -f external/dokany/license.lgpl.txt build/
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: pfsfuse-win32
-          path: |
-            build/pfsfuse.exe
-            build/libdokanfuse*.dll
-            build/license.lgpl.txt
-
-  build-macos:
-    runs-on: macos-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.x"
-
-      - uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip
-          restore-keys: |
-            ${{ runner.os }}-pip
-
-      - run: python -m pip install --upgrade meson ninja
-
-      - run: brew install macfuse coreutils
-
-      - run: |
-          meson setup build/ -Denable_pfs2tar=true
-          meson compile -C build
-
-      - name: Run Test
-        run: |
-          cd test
-          time ./pfsshell_test.tcl
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: pfsshell-macos
-          path: |
-            build/pfsshell
-            build/pfs2tar
-
-      - run: |
-          rm -rf build/
-          meson setup build/ -Denable_pfsfuse=true
-          meson compile -C build
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: pfsfuse-macos
-          path: build/pfsfuse
-
-  create-release:
-    needs: [build-ubuntu, build-win32, build-macos, build-pfsfuse-win32]
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    container:
-      image: ubuntu:20.04
-      options: "--user 0"
-    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/master'
-    steps:
-      - name: Download all artifact
-        uses: actions/download-artifact@v4
-
-      - name: Install build dependancies
-        run: |
-          apt-get -y update
-          apt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install p7zip-full
-
-      - name: Prepare artifacts for release
-        run: |
-          7z a -tzip pfsshell-ubuntu.zip pfsshell-ubuntu/*
-          7z a -tzip pfsshell-macos.zip pfsshell-macos/*
-          7z a -tzip pfsfuse-ubuntu.zip pfsfuse-ubuntu/*
-          7z a -tzip pfsfuse-macos.zip pfsfuse-macos/*
-          7z a -tzip pfsfuse-win32.zip pfsfuse-win32/*
-
-      - name: Create prerelease
-        if: github.ref == 'refs/heads/master'
-        uses: marvinpinto/action-automatic-releases@latest
-        with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          prerelease: true
-          automatic_release_tag: "latest"
-          title: "Latest development builds"
-          files: |
-            pfsshell-win32/*
-            pfsfuse-win32.zip
-            pfsshell-ubuntu.zip
-            pfsshell-macos.zip
-            pfsfuse-ubuntu.zip
-            pfsfuse-macos.zip
-
-      - name: Create release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: marvinpinto/action-automatic-releases@latest
-        with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          prerelease: "${{ contains(github.ref, '-rc') }}"
-          files: |
-            pfsshell-win32/*
-            pfsfuse-win32.zip
-            pfsshell-ubuntu.zip
-            pfsshell-macos.zip
-            pfsfuse-ubuntu.zip
-            pfsfuse-macos.zip
+{
+  "name": "Continuous Integration",
+  "on": {
+    "push": {
+      "paths": [
+        "**.c",
+        "**.h",
+        "**.cpp",
+        "**.hpp",
+        "**.build",
+        "**.in",
+        "**.yml"
+      ]
+    },
+    "pull_request": {
+      "paths": [
+        "**.c",
+        "**.h",
+        "**.cpp",
+        "**.hpp",
+        "**.build",
+        "**.in",
+        "**.yml"
+      ]
+    }
+  },
+  "env": {
+    "CMAKE_GENERATOR": "Ninja",
+    "HOMEBREW_NO_ANALYTICS": "1",
+    "HOMEBREW_NO_AUTO_UPDATE": "1",
+    "HOMEBREW_NO_INSTALL_UPGRADE": "1",
+    "HOMEBREW_NO_INSTALL_CLEANUP": "1",
+    "DEBIAN_FRONTEND": "noninteractive",
+    "TZ": "Japan"
+  },
+  "jobs": {
+    "build-ubuntu": {
+      "runs-on": "ubuntu-latest",
+      "timeout-minutes": 20,
+      "container": {
+        "image": "ubuntu:20.04",
+        "options": "--user 0"
+      },
+      "steps": [
+        {
+          "name": "Install build dependancies",
+          "run": "apt-get -y update\napt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install build-essential expect pkg-config fuse libfuse-dev git time p7zip-full\n"
+        },
+        {
+          "uses": "actions/checkout@v3",
+          "with": {
+            "submodules": "recursive"
+          }
+        },
+        {
+          "uses": "actions/setup-python@v3",
+          "with": {
+            "python-version": "3.13.3"
+          }
+        },
+        {
+          "uses": "actions/cache@v3",
+          "with": {
+            "path": "~/.cache/pip",
+            "key": "${{ runner.os }}-pip",
+            "restore-keys": "${{ runner.os }}-pip\n"
+          }
+        },
+        {
+          "run": "python -m pip install --upgrade meson ninja"
+        },
+        {
+          "name": "Build pfsshell",
+          "run": "meson setup build/ -Denable_pfs2tar=true\nmeson compile -C build\n"
+        },
+        {
+          "name": "Run Test",
+          "run": "cd test\ntime ./pfsshell_test.tcl\n"
+        },
+        {
+          "uses": "actions/upload-artifact@v4",
+          "with": {
+            "name": "pfsshell-ubuntu",
+            "path": "build/pfsshell\nbuild/pfs2tar\n"
+          }
+        },
+        {
+          "name": "Build pfsfuse",
+          "run": "rm -rf build/\nmeson setup build/ -Denable_pfsfuse=true\nmeson compile -C build\n"
+        },
+        {
+          "uses": "actions/upload-artifact@v4",
+          "with": {
+            "name": "pfsfuse-ubuntu",
+            "path": "build/pfsfuse"
+          }
+        }
+      ]
+    },
+    "build-win32": {
+      "runs-on": "ubuntu-latest",
+      "timeout-minutes": 20,
+      "container": {
+        "image": "ubuntu:20.04",
+        "options": "--user 0"
+      },
+      "steps": [
+        {
+          "run": "apt-get -y update\napt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install build-essential mingw-w64 git p7zip-full\nupdate-alternatives --set i686-w64-mingw32-gcc /usr/bin/i686-w64-mingw32-gcc-posix\nupdate-alternatives --set i686-w64-mingw32-g++ /usr/bin/i686-w64-mingw32-g++-posix\n"
+        },
+        {
+          "uses": "actions/checkout@v3",
+          "with": {
+            "submodules": "recursive"
+          }
+        },
+        {
+          "uses": "actions/setup-python@v3",
+          "with": {
+            "python-version": "3.13.3"
+          }
+        },
+        {
+          "uses": "actions/cache@v3",
+          "with": {
+            "path": "~/.cache/pip",
+            "key": "${{ runner.os }}-pip",
+            "restore-keys": "${{ runner.os }}-pip\n"
+          }
+        },
+        {
+          "run": "python -m pip install --upgrade meson ninja"
+        },
+        {
+          "run": "meson setup build/ -Denable_pfs2tar=true --cross-file ./external/meson_toolchains/mingw32_meson.ini\nmeson compile -C build archive\n"
+        },
+        {
+          "uses": "actions/upload-artifact@v4",
+          "with": {
+            "name": "pfsshell-win32",
+            "path": "build/*.7z"
+          }
+        }
+      ]
+    },
+    "build-pfsfuse-win32": {
+      "runs-on": "windows-latest",
+      "timeout-minutes": 20,
+      "defaults": {
+        "run": {
+          "shell": "msys2 {0}"
+        }
+      },
+      "steps": [
+        {
+          "name": "Install MSYS2 packages",
+          "uses": "msys2/setup-msys2@v2",
+          "with": {
+            "msystem": "MINGW32",
+            "install": "base-devel git make texinfo patch binutils mpc-devel p7zip mingw-w64-i686-gcc\nmingw-w64-i686-cmake mingw-w64-i686-make mingw-w64-i686-meson\n",
+            "update": true,
+            "shell": "msys2 {0}"
+          }
+        },
+        {
+          "uses": "actions/checkout@v3",
+          "with": {
+            "submodules": "recursive"
+          }
+        },
+        {
+          "name": "Enable git symlinks",
+          "run": "git config core.symlinks true\ngit reset --hard\n"
+        },
+        {
+          "name": "Build pfsfuse",
+          "run": "meson setup build/ -Denable_pfsfuse=true\nmeson compile -C build\ncp -f external/dokany/license.lgpl.txt build/\n"
+        },
+        {
+          "uses": "actions/upload-artifact@v4",
+          "with": {
+            "name": "pfsfuse-win32",
+            "path": "build/pfsfuse.exe\nbuild/libdokanfuse*.dll\nbuild/license.lgpl.txt\n"
+          }
+        }
+      ]
+    },
+    "build-macos": {
+      "runs-on": "macos-latest",
+      "timeout-minutes": 20,
+      "steps": [
+        {
+          "uses": "actions/checkout@v3",
+          "with": {
+            "submodules": "recursive"
+          }
+        },
+        {
+          "uses": "actions/setup-python@v3",
+          "with": {
+            "python-version": "3.x"
+          }
+        },
+        {
+          "uses": "actions/cache@v3",
+          "with": {
+            "path": "~/.cache/pip",
+            "key": "${{ runner.os }}-pip",
+            "restore-keys": "${{ runner.os }}-pip\n"
+          }
+        },
+        {
+          "run": "python -m pip install --upgrade meson ninja"
+        },
+        {
+          "run": "brew install macfuse coreutils"
+        },
+        {
+          "run": "meson setup build/ -Denable_pfs2tar=true\nmeson compile -C build\n"
+        },
+        {
+          "name": "Run Test",
+          "run": "cd test\ntime ./pfsshell_test.tcl\n"
+        },
+        {
+          "uses": "actions/upload-artifact@v4",
+          "with": {
+            "name": "pfsshell-macos",
+            "path": "build/pfsshell\nbuild/pfs2tar\n"
+          }
+        },
+        {
+          "run": "rm -rf build/\nmeson setup build/ -Denable_pfsfuse=true\nmeson compile -C build\n"
+        },
+        {
+          "uses": "actions/upload-artifact@v4",
+          "with": {
+            "name": "pfsfuse-macos",
+            "path": "build/pfsfuse"
+          }
+        }
+      ]
+    },
+    "create-release": {
+      "needs": [
+        "build-ubuntu",
+        "build-win32",
+        "build-macos",
+        "build-pfsfuse-win32"
+      ],
+      "runs-on": "ubuntu-latest",
+      "timeout-minutes": 20,
+      "container": {
+        "image": "ubuntu:20.04",
+        "options": "--user 0"
+      },
+      "if": "startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/master'",
+      "steps": [
+        {
+          "name": "Download all artifact",
+          "uses": "actions/download-artifact@v4"
+        },
+        {
+          "name": "Install build dependancies",
+          "run": "apt-get -y update\napt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install p7zip-full\n"
+        },
+        {
+          "name": "Prepare artifacts for release",
+          "run": "7z a -tzip pfsshell-ubuntu.zip pfsshell-ubuntu/*\n7z a -tzip pfsshell-macos.zip pfsshell-macos/*\n7z a -tzip pfsfuse-ubuntu.zip pfsfuse-ubuntu/*\n7z a -tzip pfsfuse-macos.zip pfsfuse-macos/*\n7z a -tzip pfsfuse-win32.zip pfsfuse-win32/*\n"
+        },
+        {
+          "name": "Create prerelease",
+          "if": "github.ref == 'refs/heads/master'",
+          "uses": "marvinpinto/action-automatic-releases@latest",
+          "with": {
+            "repo_token": "${{ secrets.GITHUB_TOKEN }}",
+            "prerelease": true,
+            "automatic_release_tag": "latest",
+            "title": "Latest development builds",
+            "files": "pfsshell-win32/*\npfsfuse-win32.zip\npfsshell-ubuntu.zip\npfsshell-macos.zip\npfsfuse-ubuntu.zip\npfsfuse-macos.zip\n"
+          }
+        },
+        {
+          "name": "Create release",
+          "if": "startsWith(github.ref, 'refs/tags/v')",
+          "uses": "marvinpinto/action-automatic-releases@latest",
+          "with": {
+            "repo_token": "${{ secrets.GITHUB_TOKEN }}",
+            "prerelease": "${{ contains(github.ref, '-rc') }}",
+            "files": "pfsshell-win32/*\npfsfuse-win32.zip\npfsshell-ubuntu.zip\npfsshell-macos.zip\npfsfuse-ubuntu.zip\npfsfuse-macos.zip\n"
+          }
+        }
+      ]
+    }
+  }
+}
