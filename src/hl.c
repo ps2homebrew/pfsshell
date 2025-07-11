@@ -176,11 +176,13 @@ int lspart(int lsmode)
         int result;
         iox_dirent_t dirent;
         if (lsmode == 1)
-            printf("Start (sector)  Code      Size         Timestamp  Name\n");
+            printf("Start (sector)       Code    Slice         Size   Timestamp         Name\n");
         while ((result = iomanX_dread(dh, &dirent)) && result != -1) {
 
             // Equal to, but avoids overflows of: size * 512 / 1024 / 1024;
             uint32_t size = dirent.stat.size / 2048;
+            uint64_t totalsize = (dirent.stat.private_1 + dirent.stat.private_2 * 0x100000000ULL) / 2048;
+            double sizeInGiB = totalsize / 1024.0;
 
             if (dirent.stat.mode == 0x0000) /* empty partition */
                 end_symbol[0] = '%';
@@ -199,12 +201,32 @@ int lspart(int lsmode)
             sprintf(mod_time, "%04d-%02d-%02d %02d:%02d",
                     mtime->year, mtime->month, mtime->day,
                     mtime->hour, mtime->min);
-            if (lsmode == 0)
-                printf("%s%s\n",
-                       dirent.name, end_symbol);
-            else if (lsmode == 1)
-                printf("%#8x        %04X %7uMB  %s  %s%s\n",
-                       dirent.stat.private_5, dirent.stat.mode, size, mod_time, dirent.name, end_symbol);
+            if (lsmode == 0) {
+                if (dirent.stat.attr == 0 && dirent.stat.mode != 0x0000)
+                    printf("%7.2f GiB  %s%s\n", sizeInGiB, dirent.name, end_symbol);
+            } else if (lsmode == 1) {
+                printf("%#10x ", dirent.stat.private_5);
+                if (dirent.stat.private_5 % 0x200000 == 0)
+                    printf("%4u GiB", dirent.stat.private_5 / 0x200000);
+                else
+                    printf("        ");
+
+                printf("  %04X", dirent.stat.mode);
+                if (size < 1024)
+                    printf("%5u MiB", size);
+                else
+                    printf("%5u GiB", size / 1024);
+
+                if (dirent.stat.attr == 0 && dirent.stat.mode != 0x0000) {
+                    if (sizeInGiB == (int)sizeInGiB)
+                        printf("  %4u    GiB", (unsigned int)sizeInGiB);
+                    else
+                        printf("  %7.2f GiB", sizeInGiB);
+                } else {
+                    printf("             ");
+                }
+                printf("   %s  %s%s\n", mod_time, dirent.name, end_symbol);
+            }
         }
 
         result = iomanX_close(dh);

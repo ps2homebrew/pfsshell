@@ -246,7 +246,11 @@ static int do_mkpfs(context_t *ctx, int argc, char *argv[])
 static int do_mkpart(context_t *ctx, int arg, char *argv[])
 {
 
-    static char *sizesString[9] = {
+    static char *sizesString[13] = {
+        "8M",
+        "16M",
+        "32M",
+        "64M",
         "128M",
         "256M",
         "512M",
@@ -255,9 +259,14 @@ static int do_mkpart(context_t *ctx, int arg, char *argv[])
         "4G",
         "8G",
         "16G",
-        "32G"};
+        "32G",
+    };
 
-    static unsigned int sizesMB[9] = {
+    static unsigned int sizesMB[13] = {
+        8,
+        16,
+        32,
+        64,
         128,
         256,
         512,
@@ -266,7 +275,8 @@ static int do_mkpart(context_t *ctx, int arg, char *argv[])
         4096,
         8192,
         16384,
-        32768};
+        32768,
+    };
 
     static char *fsType[7] = {
         "MBR",
@@ -275,7 +285,8 @@ static int do_mkpart(context_t *ctx, int arg, char *argv[])
         "REISER",
         "PFS",
         "CFS",
-        "HDL"};
+        "HDL",
+    };
 
     unsigned int size_in_mb = 0;
 
@@ -580,11 +591,16 @@ static int do_rm(context_t *ctx, int argc, char *argv[])
 static int do_rename(context_t *ctx, int argc, char *argv[])
 {
     char tmp[256];
-    strcpy(tmp, "pfs0:");
-    strcat(tmp, ctx->path);
-    if (tmp[strlen(tmp) - 1] != '/')
-        strcat(tmp, "/");
+    if (!ctx->mount)
+        strcpy(tmp, "hdd0:");
+    else {
+        strcpy(tmp, "pfs0:");
+        strcat(tmp, ctx->path);
+        if (tmp[strlen(tmp) - 1] != '/')
+            strcat(tmp, "/");
+    }
     strcat(tmp, argv[1]);
+    tmp[sizeof(tmp) - 1] = '\0'; // Ensure null-termination
     int result = iomanX_rename(tmp, argv[2]);
     if (result < 0)
         fprintf(stderr, "(!) %s: %s.\n", tmp, strerror(-result));
@@ -615,7 +631,8 @@ static int do_help(context_t *ctx, int argc, char *argv[])
         "\tOnly fs type PFS will format partition, other partitions should be formatted by another utilities;\n"
         "mount <part_name> - mount a partition;\n"
         "umount - un-mount a partition;\n"
-        "ls [-l] - no mount: list partitions; mount: list files/dirs;\n"
+        "ls [-l] - no mount: list partitions; mount: list files/dirs; -l: verbose list;\n"
+        "rename <curr_name> <new_name> - no mount: rename partition; mount: rename a file/dir.\n"
         "mkdir <dir_name> - create a new directory;\n"
         "rmdir <dir_name> - delete an existing directory;\n"
         "pwd - print current PS2 HDD directory;\n"
@@ -663,7 +680,7 @@ static int exec(void *data, int argc, char *argv[])
         {"put", 1, need_device + need_mount, &do_put},
         {"rm", 1, need_device + need_mount, &do_rm},
         {"rmpart", 1, need_device, &do_rmpart},
-        {"rename", 2, need_device + need_mount, &do_rename},
+        {"rename", 2, need_device, &do_rename},
         {"help", 0, no_req, &do_help},
     };
     static const size_t CMD_COUNT = sizeof(CMD) / sizeof(CMD[0]);
