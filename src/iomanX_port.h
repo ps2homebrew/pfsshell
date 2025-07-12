@@ -87,9 +87,9 @@ extern int _init_hdlfs(int argc, char *argv[]);
 #define FIO_S_IXOTH 0x0001 // execute
 
 // File mode checking macros
-#define FIO_S_ISLNK(m) (((m)&FIO_S_IFMT) == FIO_S_IFLNK)
-#define FIO_S_ISREG(m) (((m)&FIO_S_IFMT) == FIO_S_IFREG)
-#define FIO_S_ISDIR(m) (((m)&FIO_S_IFMT) == FIO_S_IFDIR)
+#define FIO_S_ISLNK(m) (((m) & FIO_S_IFMT) == FIO_S_IFLNK)
+#define FIO_S_ISREG(m) (((m) & FIO_S_IFMT) == FIO_S_IFREG)
+#define FIO_S_ISDIR(m) (((m) & FIO_S_IFMT) == FIO_S_IFDIR)
 
 /* File attributes that are retrieved using the getstat and dread calls, and
    set using chstat.  */
@@ -102,11 +102,15 @@ extern int _init_hdlfs(int argc, char *argv[]);
 #define HIOCNSUB   0x6803
 #define HIOCFLUSH  0x6804
 
+// DEVCTL commands
+#define HDIOC_TOTALSECTOR 0x4802
+#define HDIOC_FREESECTOR  0x480A
+
 // Arbitrarily-named commands
-#define HIOCTRANSFER     0x6832 // Used by PFS.IRX to read/write data
-#define HIOCGETSIZE      0x6833 // For main(0)/subs(1+)
-#define HIOCSETPARTERROR 0x6834 // Set (sector of a partition) that has an error
-#define HIOCGETPARTERROR 0x6835 // Get (sector of a partition) that has an error
+#define HIOCTRANSFER      0x6832 // Used by PFS.IRX to read/write data
+#define HIOCGETSIZE       0x6833 // For main(0)/subs(1+)
+#define HIOCSETPARTERROR  0x6834 // Set (sector of a partition) that has an error
+#define HIOCGETPARTERROR  0x6835 // Get (sector of a partition) that has an error
 
 // pfs
 
@@ -162,11 +166,11 @@ typedef struct
     /*1c*/ unsigned char mtime[8];
     /*24*/ unsigned int hisize;
     /*28*/ unsigned int private_0; // Number of subs (main) / subpart number (sub)
-    /*2c*/ unsigned int private_1;
-    /*30*/ unsigned int private_2;
+    /*2c*/ unsigned int private_1; // partition size low part
+    /*30*/ unsigned int private_2; // partition size high part
     /*34*/ unsigned int private_3;
     /*38*/ unsigned int private_4;
-    /*3c*/ unsigned int private_5; /* Sector start.  */
+    /*3c*/ unsigned int private_5; // Sector start
 } iox_stat_t;
 
 typedef struct
