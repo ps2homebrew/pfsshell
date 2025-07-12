@@ -107,10 +107,10 @@ extern int _init_hdlfs(int argc, char *argv[]);
 #define HDIOC_FREESECTOR  0x480A
 
 // Arbitrarily-named commands
-#define HIOCTRANSFER      0x6832 // Used by PFS.IRX to read/write data
-#define HIOCGETSIZE       0x6833 // For main(0)/subs(1+)
-#define HIOCSETPARTERROR  0x6834 // Set (sector of a partition) that has an error
-#define HIOCGETPARTERROR  0x6835 // Get (sector of a partition) that has an error
+#define HIOCTRANSFER     0x6832 // Used by PFS.IRX to read/write data
+#define HIOCGETSIZE      0x6833 // For main(0)/subs(1+)
+#define HIOCSETPARTERROR 0x6834 // Set (sector of a partition) that has an error
+#define HIOCGETPARTERROR 0x6835 // Get (sector of a partition) that has an error
 
 // pfs
 
@@ -167,9 +167,11 @@ typedef struct
     /*24*/ unsigned int hisize;
     /*28*/ unsigned int private_0; // Number of subs (main) / subpart number (sub)
     /*2c*/ unsigned int private_1; // partition size low part
+                                   // cppcheck-suppress unusedStructMember
     /*30*/ unsigned int private_2; // partition size high part
     /*34*/ unsigned int private_3;
     /*38*/ unsigned int private_4;
+    // cppcheck-suppress unusedStructMember
     /*3c*/ unsigned int private_5; // Sector start
 } iox_stat_t;
 
