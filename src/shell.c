@@ -9,6 +9,8 @@
 #include "iomanX_port.h"
 #include "hl.h"
 
+unsigned int total_sectors = 0;
+
 typedef struct
 {
     int setup;
@@ -156,6 +158,66 @@ static int do_lcd(context_t *ctx, int argc, char *argv[])
         /* chdir would set errno on error */
         return (chdir(argv[1]));
 }
+static int do_df(context_t *ctx, int argc, char *argv[])
+{
+    char tmp[256];
+    if (!ctx->mount) { /* not mounted */
+        strcpy(tmp, "hdd0:");
+        unsigned int used_sectors = 0;
+        int result;
+        iox_dirent_t dirent;
+        int dh = iomanX_dopen(tmp);
+        if (dh < 0) {
+            fprintf(stderr, "(!) Unable to open %s: %s.\n", tmp, strerror(-dh));
+            return (dh);
+        }
+        while ((result = iomanX_dread(dh, &dirent)) && result != -1) {
+            if (dirent.stat.mode != 0x0000 && dirent.stat.attr == 0) {
+                used_sectors += dirent.stat.private_1;
+            }
+        }
+        iomanX_close(dh);
+        unsigned int free_sectors = total_sectors + 1 - used_sectors;
+
+        printf("Device                               Size    Used   Avail Capacity\n");
+        printf("%s                             %4uGiB %4uGiB %4uGiB   %3u%%\n",
+               tmp,
+               (total_sectors + 1) / (2048 * 1024),
+               used_sectors / (2048 * 1024),
+               free_sectors / (2048 * 1024),
+               (used_sectors * 100) / (total_sectors + 1));
+    } else { /* mounted ctx->mount*/
+        iox_stat_t stat;
+        int dh = iomanX_getstat(ctx->mount_point, &stat);
+        if (dh < 0) {
+            fprintf(stderr, "(!) Unable to get stats for %s: %s.\n", ctx->mount_point, strerror(-dh));
+            return (dh);
+        }
+        unsigned int total_pfs_sectors = stat.private_1 - stat.private_0 * 4 - 4 * 1024 * 2; /* 4 MiB for main header, 2 KiB for each subpartition */
+
+        strcpy(tmp, "pfs0:");
+        unsigned int frsize = iomanX_devctl(tmp, PDIOC_ZONESZ, NULL, 0, NULL, 0);
+        unsigned int bavail = iomanX_devctl(tmp, PDIOC_ZONEFREE, NULL, 0, NULL, 0);
+        unsigned int free_sectors = frsize * bavail / 512; /* 512 bytes per sector */
+        printf("Device                               Size    Used   Avail Capacity\n");
+        if (total_pfs_sectors / 2048 < 10000) {
+            printf("%32s  %4uMiB %4uMiB %4uMiB   %3u%%\n",
+                   ctx->mount_point + 5,
+                   total_pfs_sectors / 2048,
+                   (total_pfs_sectors - free_sectors) / 2048,
+                   free_sectors / 2048,
+                   ((total_pfs_sectors - free_sectors) * 100) / total_pfs_sectors);
+        } else {
+            printf("%32s  %4uGiB %4uGiB %4uGiB   %3u%%\n",
+                   ctx->mount_point + 5,
+                   total_pfs_sectors / (2048 * 1024),
+                   (total_pfs_sectors - free_sectors) / (2048 * 1024),
+                   free_sectors / (2048 * 1024),
+                   ((total_pfs_sectors - free_sectors) * 100) / total_pfs_sectors);
+        }
+    }
+    return (0);
+}
 
 /* where (image of) PS2 HDD is; in fake_sdk/atad.c */
 extern void set_atad_device_path(const char *path);
@@ -201,6 +263,8 @@ static int do_device(context_t *ctx, int argc, char *argv[])
         exit(1);
     }
     ctx->setup = 1;
+    total_sectors = iomanX_devctl("hdd0:", HDIOC_TOTALSECTOR, NULL, 0, NULL, 0);
+    do_df(ctx, 0, NULL); /* display free space on partition */
     return (0);
 }
 
@@ -219,6 +283,8 @@ static int do_initialize(context_t *ctx, int argc, char *argv[])
         }
         if (result < 0)
             fprintf(stderr, "(!) format: %s.\n", strerror(-result));
+        total_sectors = iomanX_devctl("hdd0:", HDIOC_TOTALSECTOR, NULL, 0, NULL, 0);
+        do_df(ctx, 0, NULL); /* display free space on partition */
         return (result);
     }
 }
@@ -634,16 +700,17 @@ static int do_help(context_t *ctx, int argc, char *argv[])
         "ls [-l] - no mount: list partitions; mount: list files/dirs; -l: verbose list;\n"
         "rename <curr_name> <new_name> - no mount: rename partition; mount: rename a file/dir.\n"
         "mkdir <dir_name> - create a new directory;\n"
-        "rmdir <dir_name> - delete an existing directory;\n"
+        "rmdir <dir_name> - delete an existing empty directory;\n"
         "pwd - print current PS2 HDD directory;\n"
         "cd <dir_name> - change directory;\n"
         "get <file_name> - copy file from PS2 HDD to current dir;\n"
         "put <file_name> - copy file from current dir to PS2 HDD;\n"
         "\tfile name must not contain a path;\n"
         "rm <file_name> - delete a file;\n"
-        "rename <curr_name> <new_name> - rename a file/dir.\n"
+        "rename <curr_name> <new_name> - rename a file/dir/partition.\n"
         "rmpart <part_name> - remove partition (destructive).\n"
-        "exit - exits the program. (Do this before you unplug your HDD)\n",
+        "df - no mount: display free space on the whole HDD; mount: display free space on partition.\n"
+        "exit/quit/bye - exits the program. (Do this before you unplug your HDD)\n",
         stderr);
     return (0);
 }
@@ -680,6 +747,7 @@ static int exec(void *data, int argc, char *argv[])
         {"put", 1, need_device + need_mount, &do_put},
         {"rm", 1, need_device + need_mount, &do_rm},
         {"rmpart", 1, need_device, &do_rmpart},
+        {"df", 0, need_device, &do_df},
         {"rename", 2, need_device, &do_rename},
         {"help", 0, no_req, &do_help},
     };
