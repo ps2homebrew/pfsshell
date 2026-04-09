@@ -9,7 +9,9 @@
         "**.hpp",
         "**.build",
         "**.in",
-        "**.yml"
+        "**.yml",
+        ".gitmodules",
+        "external/**"
       ]
     },
     "pull_request": {
@@ -20,7 +22,9 @@
         "**.hpp",
         "**.build",
         "**.in",
-        "**.yml"
+        "**.yml",
+        ".gitmodules",
+        "external/**"
       ]
     }
   },

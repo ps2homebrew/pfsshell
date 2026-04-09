@@ -1,5 +1,12 @@
 project('pfs', 'c')
 
+fs = import('fs')
+if not fs.is_dir('include') or not fs.is_dir('src') or not fs.is_dir('irx')
+  error('The pfs include/src/irx directories are missing. ' +
+        'This is likely because the git submodules have not been initialized. ' +
+        'Please run:\n  git submodule update --init --recursive')
+endif
+
 libfakeps2sdk_proj = subproject('fakeps2sdk')
 libfakeps2sdk_dep = libfakeps2sdk_proj.get_variable('libfakeps2sdk_dep')
 
