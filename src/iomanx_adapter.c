@@ -13,8 +13,13 @@
 #define pfsfuse_stat stat
 #endif
 
+#ifdef PFSFUSE_USE_FUSE3
+#define FUSE_USE_VERSION 30
+#include <fuse3/fuse.h>
+#else
 #define FUSE_USE_VERSION 26
 #include <fuse.h>
+#endif
 
 #include "iomanX_port.h"
 
@@ -297,9 +302,17 @@ static void convert_stat_to_iomanx(iox_stat_t *iomanx_stat, const struct pfsfuse
 #endif
 }
 
-static void *iomanx_adapter_init(struct fuse_conn_info *conn)
+static void *iomanx_adapter_init(struct fuse_conn_info *conn
+#if FUSE_USE_VERSION >= 30
+                                 ,
+                                 struct fuse_config *cfg
+#endif
+)
 {
     (void)conn;
+#if FUSE_USE_VERSION >= 30
+    (void)cfg;
+#endif
     return NULL;
 }
 
@@ -530,7 +543,12 @@ static int iomanx_adapter_rmdir(const char *path)
 }
 
 static int iomanx_adapter_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
-                                  off_t offset, struct fuse_file_info *fi)
+                                  off_t offset, struct fuse_file_info *fi
+#if FUSE_USE_VERSION >= 30
+                                  ,
+                                  enum fuse_readdir_flags flags
+#endif
+)
 {
     int dp;
     int res = 0;
@@ -538,6 +556,9 @@ static int iomanx_adapter_readdir(const char *path, void *buf, fuse_fill_dir_t f
 
     (void)offset;
     (void)fi;
+#if FUSE_USE_VERSION >= 30
+    (void)flags;
+#endif
 
     char translated_path[1024];
     translate_path(translated_path, path, sizeof(translated_path));
@@ -550,7 +571,13 @@ static int iomanx_adapter_readdir(const char *path, void *buf, fuse_fill_dir_t f
     while ((res = iomanX_dread(dp, &de)) && (res != -1)) {
         struct pfsfuse_stat st;
         convert_stat_to_posix(&st, &(de.stat));
-        if (filler(buf, de.name, &st, 0))
+        if (filler(buf, de.name, &st, 0
+#if FUSE_USE_VERSION >= 30
+                   /* fuse_fill_dir_flags */
+                   ,
+                   0
+#endif
+                   ))
             break;
     }
 
@@ -559,10 +586,18 @@ static int iomanx_adapter_readdir(const char *path, void *buf, fuse_fill_dir_t f
 }
 
 
-static int iomanx_adapter_getattr(const char *path, struct pfsfuse_stat *stbuf)
+static int iomanx_adapter_getattr(const char *path, struct pfsfuse_stat *stbuf
+#if FUSE_USE_VERSION >= 30
+                                  ,
+                                  struct fuse_file_info *fi
+#endif
+)
 {
     int res;
     iox_stat_t iomanx_stat;
+#if FUSE_USE_VERSION >= 30
+    (void)fi;
+#endif
 
     char translated_path[1024];
     translate_path(translated_path, path, sizeof(translated_path));
@@ -589,11 +624,19 @@ static int iomanx_adapter_ftruncate(const char *path, off_t offset,
     return 0;
 }
 
-static int iomanx_adapter_chmod(const char *path, mode_t mode)
+static int iomanx_adapter_chmod(const char *path, mode_t mode
+#if FUSE_USE_VERSION >= 30
+                                ,
+                                struct fuse_file_info *fi
+#endif
+)
 {
     int res;
     iox_stat_t iomanx_stat;
     struct pfsfuse_stat posix_stat;
+#if FUSE_USE_VERSION >= 30
+    (void)fi;
+#endif
     posix_stat.st_mode = mode;
     convert_stat_to_iomanx(&iomanx_stat, &posix_stat);
 
@@ -608,10 +651,18 @@ static int iomanx_adapter_chmod(const char *path, mode_t mode)
     return 0;
 }
 
-static int iomanx_adapter_utimens(const char *path, const struct timespec ts[2])
+static int iomanx_adapter_utimens(const char *path, const struct timespec ts[2]
+#if FUSE_USE_VERSION >= 30
+                                  ,
+                                  struct fuse_file_info *fi
+#endif
+)
 {
     int res;
     iox_stat_t iomanx_stat;
+#if FUSE_USE_VERSION >= 30
+    (void)fi;
+#endif
     convert_time_to_iomanx(iomanx_stat.atime, &(ts[0].tv_sec));
     convert_time_to_iomanx(iomanx_stat.mtime, &(ts[1].tv_sec));
 
@@ -626,9 +677,19 @@ static int iomanx_adapter_utimens(const char *path, const struct timespec ts[2])
     return 0;
 }
 
-static int iomanx_adapter_rename(const char *from, const char *to)
+static int iomanx_adapter_rename(const char *from, const char *to
+#if FUSE_USE_VERSION >= 30
+                                 ,
+                                 unsigned int flags
+#endif
+)
 {
     int res;
+#if FUSE_USE_VERSION >= 30
+    if (flags != 0) {
+        return -EINVAL;
+    }
+#endif
 
     char translated_from[1024];
     translate_path(translated_from, from, sizeof(translated_from));
@@ -690,8 +751,11 @@ static const struct fuse_operations iomanx_adapter_operations = {
     // link
     .chmod = iomanx_adapter_chmod,
     // chown
-    // ftruncate renamed to truncate into later libfuse
+#if FUSE_USE_VERSION >= 30
+    .truncate = iomanx_adapter_ftruncate,
+#else
     .ftruncate = iomanx_adapter_ftruncate,
+#endif
     .open = iomanx_adapter_open,
     .read = iomanx_adapter_read,
     .write = iomanx_adapter_write,

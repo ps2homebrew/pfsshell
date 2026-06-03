@@ -117,7 +117,7 @@ Commands marked with DESTRUCTIVE could potentially wipe or remove important info
 
 `pfsfuse` provides an ability to mount partition into host filesystem (like network folder).
 `pfsfuse` supports physically connected drives, raw drive images as regular files, and an NBD network server from OPL.
-Your system has to support fuse. For example, in the Linux `fuse` package should be installed, on the MacOS `macfuse` can be used.
+Your system has to support fuse. For example, on Linux the `fuse3` package is recommended (with `fuse` as a fallback on older systems), while on macOS `macfuse` can be used.
 The Unix users can use the following command for mounting the partition:
 
 ```sh

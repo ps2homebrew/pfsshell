@@ -48,7 +48,7 @@
       "steps": [
         {
           "name": "Install build dependancies",
-          "run": "apt-get -y update\napt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install build-essential expect pkg-config fuse libfuse-dev git time p7zip-full\n"
+          "run": "apt-get -y update\napt-get -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install build-essential expect pkg-config fuse3 libfuse3-dev git time p7zip-full\n"
         },
         {
           "uses": "actions/checkout@v3",

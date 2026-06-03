@@ -59,9 +59,15 @@ if host_system == 'windows' and cc.get_id() != 'msvc' and cc.get_id() != 'clang-
 	libfuse_include = include_directories(['external/dokany/dokan_fuse/include'])
 	libfuse_dep = cc.find_library('libdokanfuse2.dll',
                dirs : [meson.current_source_dir() +'/external/dokany/dokan_fuse/build'])
+	use_fuse3 = false
 else
 	libfuse_include = ['']
-	libfuse_dep = dependency('fuse')
+	use_fuse3 = true
+	libfuse_dep = dependency('fuse3', required: false)
+	if not libfuse_dep.found()
+		use_fuse3 = false
+		libfuse_dep = dependency('fuse')
+	endif
 endif
 
 pfsfuse_src = [
@@ -70,6 +76,9 @@ pfsfuse_src = [
 pfsfuse_cflags = []
 if host_system == 'linux'
 	pfsfuse_cflags += ['-pthread']
+endif
+if use_fuse3
+	pfsfuse_cflags += ['-DPFSFUSE_USE_FUSE3']
 endif
 pfsfuse_cflags += ['-D_FILE_OFFSET_BITS=64']
 pfsfuse_ldflags = []
